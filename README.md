@@ -74,3 +74,16 @@ npm run test:alerts
 ```
 
 The console channel is always enabled. Slack and SMS are tested only when their enable flags are true.
+
+## Daily heartbeat
+
+Send one Slack heartbeat message per day when the configured hour is reached:
+
+- `HEARTBEAT_ENABLED=true`
+- `HEARTBEAT_HOUR=8`
+- `HEARTBEAT_TIMEZONE=Europe/Brussels`
+- `HEARTBEAT_SLACK_WEBHOOK_URL`
+
+`HEARTBEAT_HOUR` is an hour from `0` to `23` in `HEARTBEAT_TIMEZONE`.
+
+To choose the Slack channel, create the incoming webhook for that channel and put it in `HEARTBEAT_SLACK_WEBHOOK_URL`. If `HEARTBEAT_SLACK_WEBHOOK_URL` is empty, the app falls back to `SLACK_WEBHOOK_URL`.

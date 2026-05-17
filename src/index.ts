@@ -1,10 +1,12 @@
 import { evaluateAlerts } from "./alerts.js";
 import { createAlertSender } from "./alertSender.js";
 import { loadConfig } from "./config.js";
+import { DailyHeartbeat } from "./heartbeat.js";
 import { fetchCurrentPowerFlow } from "./solaredge.js";
 
 const config = loadConfig();
 const alertSender = createAlertSender(config);
+const heartbeat = config.heartbeat ? new DailyHeartbeat(config.heartbeat) : undefined;
 const lastAlertAt = new Map<string, number>();
 
 function shouldSendAlert(key: string): boolean {
@@ -41,12 +43,19 @@ async function monitorOnce(): Promise<void> {
       await alertSender.send(alert);
     }
   }
+
+  await heartbeat?.sendIfDue(flow);
 }
 
 async function startMonitor(): Promise<void> {
   console.log(`Starting Home Energy Monitor. Polling every ${config.pollIntervalMs / 1000}s.`);
   console.log(`SMS alerts are ${config.twilio ? "enabled" : "disabled"}.`);
   console.log(`Slack alerts are ${config.slack ? "enabled" : "disabled"}.`);
+  console.log(
+    config.heartbeat
+      ? `Heartbeat is enabled at hour ${config.heartbeat.hour} in ${config.heartbeat.timezone}.`
+      : "Heartbeat is disabled."
+  );
 
   await monitorOnce();
   setInterval(() => {

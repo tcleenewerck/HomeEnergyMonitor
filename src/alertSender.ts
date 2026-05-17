@@ -1,6 +1,7 @@
 import twilio from "twilio";
 import type { Alert } from "./alerts.js";
 import type { MonitorConfig } from "./config.js";
+import { sendSlackMessage } from "./slack.js";
 
 export type AlertSender = {
   name: string;
@@ -38,20 +39,7 @@ class SlackAlertSender implements AlertSender {
   constructor(private readonly config: NonNullable<MonitorConfig["slack"]>) {}
 
   async send(alert: Alert): Promise<void> {
-    const response = await fetch(this.config.webhookUrl, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        text: `:warning: *Home Energy Monitor*\n${alert.message}`
-      })
-    });
-
-    if (!response.ok) {
-      const body = await response.text();
-      throw new Error(`Slack webhook returned ${response.status}: ${body}`);
-    }
+    await sendSlackMessage(this.config.webhookUrl, `:warning: *Home Energy Monitor*\n${alert.message}`);
   }
 }
 

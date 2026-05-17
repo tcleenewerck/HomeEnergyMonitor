@@ -1,6 +1,8 @@
 export type SolarEdgeConnection = {
   status: "Active" | "Idle" | "Disabled" | string;
   currentPower: number;
+  chargeLevel?: number;
+  critical?: boolean;
 };
 
 export type SolarEdgePowerRoute = {

@@ -17,6 +17,11 @@ export type MonitorConfig = {
   slack?: {
     webhookUrl: string;
   };
+  heartbeat?: {
+    hour: number;
+    timezone: string;
+    slackWebhookUrl: string;
+  };
 };
 
 function requiredEnv(name: string): string {
@@ -115,6 +120,30 @@ function loadSlackConfig(): MonitorConfig["slack"] {
   return { webhookUrl };
 }
 
+function loadHeartbeatConfig(): MonitorConfig["heartbeat"] {
+  if (!booleanEnv("HEARTBEAT_ENABLED", false)) {
+    return undefined;
+  }
+
+  const hour = numberEnv("HEARTBEAT_HOUR", 8);
+  const timezone = optionalEnv("HEARTBEAT_TIMEZONE") ?? "Europe/Brussels";
+  const slackWebhookUrl = optionalEnv("HEARTBEAT_SLACK_WEBHOOK_URL") ?? optionalEnv("SLACK_WEBHOOK_URL");
+
+  if (!Number.isInteger(hour) || hour < 0 || hour > 23) {
+    throw new Error("HEARTBEAT_HOUR must be an integer from 0 to 23.");
+  }
+
+  if (!slackWebhookUrl) {
+    throw new Error("Heartbeat requires HEARTBEAT_SLACK_WEBHOOK_URL or SLACK_WEBHOOK_URL.");
+  }
+
+  return {
+    hour,
+    timezone,
+    slackWebhookUrl
+  };
+}
+
 export function loadConfig(): MonitorConfig {
   const pollIntervalSeconds = numberEnv("POLL_INTERVAL_SECONDS", 60);
   const alertCooldownSeconds = numberEnv("ALERT_COOLDOWN_SECONDS", 900);
@@ -134,6 +163,7 @@ export function loadConfig(): MonitorConfig {
       minPvProductionW: optionalNumberEnv("MIN_PV_PRODUCTION_W")
     },
     twilio: loadTwilioConfig(),
-    slack: loadSlackConfig()
+    slack: loadSlackConfig(),
+    heartbeat: loadHeartbeatConfig()
   };
 }
