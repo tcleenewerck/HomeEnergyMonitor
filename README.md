@@ -1,0 +1,76 @@
+# Home Energy Monitor
+
+A small Railway-ready worker that monitors SolarEdge current power flow and sends alerts when configured conditions arise.
+
+## Local setup
+
+```bash
+npm install
+cp .env.example .env
+npm run dev
+```
+
+Fill `.env` with your real SolarEdge values:
+
+- `SOLAREDGE_SITE_ID`
+- `SOLAREDGE_API_KEY`
+
+## Railway setup
+
+Create the same values as Railway environment variables. Railway should build with:
+
+```bash
+npm run build
+```
+
+And start with:
+
+```bash
+npm start
+```
+
+## Alert conditions
+
+Set any of these environment variables to enable an alert:
+
+- `MAX_GRID_IMPORT_W`: alert when the house imports more than this from the grid.
+- `MAX_GRID_EXPORT_W`: alert when the house exports more than this to the grid.
+- `MIN_PV_PRODUCTION_W`: alert when solar production drops below this value.
+
+## SMS alerts
+
+Alerts always go to stdout/stderr so they are visible in Railway logs.
+
+To also send SMS alerts through Twilio, set:
+
+- `SMS_ALERTS_ENABLED=true`
+
+And set all of these variables:
+
+- `TWILIO_ACCOUNT_SID`
+- `TWILIO_AUTH_TOKEN`
+- `TWILIO_FROM_NUMBER`
+- `ALERT_TO_PHONE_NUMBER`
+
+Phone numbers should be in E.164 format, for example `+32470123456`.
+
+Leave `SMS_ALERTS_ENABLED=false` while the Twilio account is still being processed. The Twilio credentials can be present; they will not be used until SMS alerts are enabled.
+
+## Slack alerts
+
+To send alerts to Slack, create a Slack incoming webhook and set:
+
+- `SLACK_ALERTS_ENABLED=true`
+- `SLACK_WEBHOOK_URL`
+
+Leave `SLACK_ALERTS_ENABLED=false` to keep Slack disabled even if a webhook URL is present.
+
+## Test alert configuration
+
+Send a hello message to every enabled alert channel:
+
+```bash
+npm run test:alerts
+```
+
+The console channel is always enabled. Slack and SMS are tested only when their enable flags are true.
