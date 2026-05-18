@@ -118,6 +118,18 @@ export function evaluateAlerts(flow: CurrentPowerFlow, config: MonitorConfig): A
     });
   }
 
+  if (
+    config.thresholds.minBatteryLevelPercent !== undefined &&
+    chargeLevel !== undefined &&
+    chargeLevel < config.thresholds.minBatteryLevelPercent
+  ) {
+    alerts.push({
+      key: "min-battery-level",
+      message: `Battery level is ${Math.round(chargeLevel)}%, below ${config.thresholds.minBatteryLevelPercent}%.`,
+      sendOnceUntilCleared: true
+    });
+  }
+
   if (config.thresholds.batteryCapacityKWh !== undefined) {
     const minutesToFull = minutesUntilBatteryFull(flow, config.thresholds.batteryCapacityKWh);
     const noticeMinutes = config.thresholds.batteryFullNoticeMinutes ?? 5;

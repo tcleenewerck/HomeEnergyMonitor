@@ -39,6 +39,7 @@ Set any of these environment variables to enable an alert:
 - `BATTERY_CAPACITY_KWH`: enable a battery-full-soon alert using the usable battery capacity, for example `10`.
 - `BATTERY_FULL_NOTICE_MINUTES`: alert when the battery is predicted to be full within this many minutes. Defaults to `5`.
 - `MIN_BATTERY_CHARGE_RATE_W`: ignore slow trickle charging below this rate. Defaults to `250`.
+- `MIN_BATTERY_LEVEL_PERCENT`: alert once when the battery drops below this charge level, for example `50`.
 
 The battery-full-soon alert uses the SolarEdge battery charge level and current storage charging power:
 
