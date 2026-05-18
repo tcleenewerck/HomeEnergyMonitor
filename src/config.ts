@@ -1,3 +1,5 @@
+import { parseTimeSlotSchedule, type TimeSlotSchedule } from "./timeslots.js";
+
 export type MonitorConfig = {
   solarEdgeSiteId: string;
   solarEdgeApiKey: string;
@@ -5,10 +7,14 @@ export type MonitorConfig = {
   alertCooldownMs: number;
   requestTimeoutMs: number;
   maxConsecutiveMonitorFailures: number;
+  monitoring: {
+    timezone: string;
+    battery: TimeSlotSchedule;
+    solarEdge: TimeSlotSchedule;
+  };
   thresholds: {
     maxGridImportW?: number;
     maxGridExportW?: number;
-    minPvProductionW?: number;
     batteryCapacityKWh?: number;
     batteryFullNoticeMinutes?: number;
     batteryFullAlertResetBelowPercent?: number;
@@ -156,6 +162,9 @@ export function loadConfig(): MonitorConfig {
   const alertCooldownSeconds = numberEnv("ALERT_COOLDOWN_SECONDS", 900);
   const requestTimeoutSeconds = numberEnv("REQUEST_TIMEOUT_SECONDS", 15);
   const maxConsecutiveMonitorFailures = numberEnv("MAX_CONSECUTIVE_MONITOR_FAILURES", 3);
+  const monitoringTimezone = optionalEnv("MONITORING_TIMEZONE") ?? "Europe/Brussels";
+  const batteryAlertTimeslots = optionalEnv("BATTERY_ALERT_TIMESLOTS") ?? "07:00-18:00";
+  const solarEdgeAlertTimeslots = optionalEnv("SOLAREDGE_ALERT_TIMESLOTS") ?? "07:00-18:00";
 
   if (pollIntervalSeconds < 10) {
     throw new Error("POLL_INTERVAL_SECONDS must be at least 10.");
@@ -176,10 +185,14 @@ export function loadConfig(): MonitorConfig {
     alertCooldownMs: alertCooldownSeconds * 1000,
     requestTimeoutMs: requestTimeoutSeconds * 1000,
     maxConsecutiveMonitorFailures,
+    monitoring: {
+      timezone: monitoringTimezone,
+      battery: parseTimeSlotSchedule(batteryAlertTimeslots, monitoringTimezone, "BATTERY_ALERT_TIMESLOTS"),
+      solarEdge: parseTimeSlotSchedule(solarEdgeAlertTimeslots, monitoringTimezone, "SOLAREDGE_ALERT_TIMESLOTS")
+    },
     thresholds: {
       maxGridImportW: optionalNumberEnv("MAX_GRID_IMPORT_W"),
       maxGridExportW: optionalNumberEnv("MAX_GRID_EXPORT_W"),
-      minPvProductionW: optionalNumberEnv("MIN_PV_PRODUCTION_W"),
       batteryCapacityKWh: optionalNumberEnv("BATTERY_CAPACITY_KWH"),
       batteryFullNoticeMinutes: optionalNumberEnv("BATTERY_FULL_NOTICE_MINUTES") ?? 5,
       batteryFullAlertResetBelowPercent: optionalNumberEnv("BATTERY_FULL_ALERT_RESET_BELOW_PERCENT") ?? 95,

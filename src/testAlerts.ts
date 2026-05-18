@@ -13,6 +13,7 @@ for (const sender of senders) {
   try {
     await sender.send({
       key: "config-test",
+      device: "solaredge",
       message: testMessage
     });
     console.log(`OK: ${sender.name}`);

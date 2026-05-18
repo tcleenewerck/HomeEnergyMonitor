@@ -4,6 +4,7 @@ import { loadConfig } from "./config.js";
 import { DailyHeartbeat } from "./heartbeat.js";
 import { settingsOverview } from "./settingsOverview.js";
 import { fetchCurrentPowerFlow } from "./solaredge.js";
+import { isWithinTimeSlotSchedule } from "./timeslots.js";
 
 const config = loadConfig();
 const alertSender = createAlertSender(config);
@@ -31,6 +32,11 @@ function shouldSendAlert(alert: ReturnType<typeof evaluateAlerts>[number]): bool
   }
 
   return true;
+}
+
+function isAlertInMonitoringTimeslot(alert: ReturnType<typeof evaluateAlerts>[number]): boolean {
+  const schedule = alert.device === "battery" ? config.monitoring.battery : config.monitoring.solarEdge;
+  return isWithinTimeSlotSchedule(schedule);
 }
 
 async function monitorOnce(): Promise<void> {
@@ -66,7 +72,7 @@ async function monitorOnce(): Promise<void> {
       activeOnceAlertKeys.delete(alert.key);
     }
 
-    if (!alert.activeOnly && shouldSendAlert(alert)) {
+    if (!alert.activeOnly && isAlertInMonitoringTimeslot(alert) && shouldSendAlert(alert)) {
       await alertSender.send(alert);
     }
   }
@@ -86,13 +92,14 @@ async function handleMonitorError(error: unknown): Promise<void> {
 
   const alert = {
     key: "monitor-poll-failure",
+    device: "solaredge" as const,
     message:
       `SolarEdge monitoring has failed ${consecutiveMonitorFailures} times in a row. ` +
       `Latest error: ${message}`,
     sendOnceUntilCleared: true
   };
 
-  if (shouldSendAlert(alert)) {
+  if (isAlertInMonitoringTimeslot(alert) && shouldSendAlert(alert)) {
     await alertSender.send(alert);
   }
 }

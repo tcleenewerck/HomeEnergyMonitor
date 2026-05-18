@@ -45,13 +45,18 @@ External HTTP requests time out after `REQUEST_TIMEOUT_SECONDS`, which defaults 
 
 If SolarEdge polling fails repeatedly, the worker keeps running and sends an alert after `MAX_CONSECUTIVE_MONITOR_FAILURES` consecutive failures. This defaults to `3` and clears once a later SolarEdge poll succeeds.
 
+Battery and SolarEdge alerts are only sent inside their configured alert timeslots. The worker still monitors and logs outside those windows. The default alert timeslot for both is `07:00-18:00` in `Europe/Brussels`, so evening alerts are suppressed unless you change the window.
+
+- `MONITORING_TIMEZONE`: timezone used to evaluate alert timeslots. Defaults to `Europe/Brussels`.
+- `BATTERY_ALERT_TIMESLOTS`: comma-separated alert windows for battery alerts, for example `07:00-18:00` or `06:30-11:00,13:00-18:00`. Use `always` for all-day alerts.
+- `SOLAREDGE_ALERT_TIMESLOTS`: comma-separated alert windows for SolarEdge alerts and repeated SolarEdge poll-failure alerts. Use `always` for all-day alerts.
+
 ## Alert conditions
 
 Set any of these environment variables to enable an alert:
 
 - `MAX_GRID_IMPORT_W`: alert when the house imports more than this from the grid.
 - `MAX_GRID_EXPORT_W`: alert when the house exports more than this to the grid.
-- `MIN_PV_PRODUCTION_W`: alert when solar production drops below this value.
 - `BATTERY_CAPACITY_KWH`: enable a battery-full-soon alert using the usable battery capacity, for example `10`.
 - `BATTERY_FULL_NOTICE_MINUTES`: alert when the battery is predicted to be full within this many minutes. Defaults to `5`.
 - `BATTERY_FULL_ALERT_RESET_BELOW_PERCENT`: after a full/full-soon alert, do not send another one until the battery drops below this charge level. Defaults to `95`.

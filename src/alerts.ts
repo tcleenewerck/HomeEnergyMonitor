@@ -3,6 +3,7 @@ import type { CurrentPowerFlow } from "./solaredge.js";
 
 export type Alert = {
   key: string;
+  device: "battery" | "solaredge";
   message: string;
   activeOnly?: boolean;
   resetOnceStateBeforeSending?: boolean;
@@ -36,10 +37,6 @@ function hasRoute(flow: CurrentPowerFlow, from: string, to: string): boolean {
 
 function gridPowerWatts(flow: CurrentPowerFlow): number {
   return toWatts(flow.GRID?.currentPower ?? 0, flow.unit);
-}
-
-function pvPowerWatts(flow: CurrentPowerFlow): number {
-  return toWatts(flow.PV?.currentPower ?? 0, flow.unit);
 }
 
 function storage(flow: CurrentPowerFlow) {
@@ -81,7 +78,6 @@ function isBatteryCharging(flow: CurrentPowerFlow): boolean {
 export function evaluateAlerts(flow: CurrentPowerFlow, config: MonitorConfig): Alert[] {
   const alerts: Alert[] = [];
   const gridPowerW = gridPowerWatts(flow);
-  const pvPowerW = pvPowerWatts(flow);
   const storagePowerW = storagePowerWatts(flow);
   const chargeLevel = batteryChargeLevel(flow);
   const isImportingFromGrid = hasRoute(flow, "GRID", "LOAD");
@@ -95,6 +91,7 @@ export function evaluateAlerts(flow: CurrentPowerFlow, config: MonitorConfig): A
   ) {
     alerts.push({
       key: "max-grid-import",
+      device: "solaredge",
       message: `Grid import is ${roundedWatts(gridPowerW)} W, above ${config.thresholds.maxGridImportW} W.`
     });
   }
@@ -106,17 +103,8 @@ export function evaluateAlerts(flow: CurrentPowerFlow, config: MonitorConfig): A
   ) {
     alerts.push({
       key: "max-grid-export",
+      device: "solaredge",
       message: `Grid export is ${roundedWatts(gridPowerW)} W, above ${config.thresholds.maxGridExportW} W.`
-    });
-  }
-
-  if (
-    config.thresholds.minPvProductionW !== undefined &&
-    pvPowerW < config.thresholds.minPvProductionW
-  ) {
-    alerts.push({
-      key: "min-pv-production",
-      message: `PV production is ${roundedWatts(pvPowerW)} W, below ${config.thresholds.minPvProductionW} W.`
     });
   }
 
@@ -127,6 +115,7 @@ export function evaluateAlerts(flow: CurrentPowerFlow, config: MonitorConfig): A
   ) {
     alerts.push({
       key: "min-battery-level",
+      device: "battery",
       message: `Battery level is ${Math.round(chargeLevel)}%, below ${config.thresholds.minBatteryLevelPercent}%.`,
       sendOnceUntilCleared: true
     });
@@ -143,6 +132,7 @@ export function evaluateAlerts(flow: CurrentPowerFlow, config: MonitorConfig): A
     if (chargeLevel !== undefined && chargeLevel >= 100) {
       alerts.push({
         key: "battery-full-soon",
+        device: "battery",
         message: "Battery is full.",
         resetOnceStateBeforeSending,
         sendOnceUntilCleared: true
@@ -150,6 +140,7 @@ export function evaluateAlerts(flow: CurrentPowerFlow, config: MonitorConfig): A
     } else if (minutesToFull !== undefined && minutesToFull <= noticeMinutes && storagePowerW >= minChargeRateW) {
       alerts.push({
         key: "battery-full-soon",
+        device: "battery",
         message:
           `Battery is expected to be full in about ${Math.max(1, Math.round(minutesToFull))} min ` +
           `at ${roundedWatts(storagePowerW)} W charging power.`,
@@ -159,6 +150,7 @@ export function evaluateAlerts(flow: CurrentPowerFlow, config: MonitorConfig): A
     } else if (chargeLevel !== undefined && chargeLevel >= resetBelowPercent) {
       alerts.push({
         key: "battery-full-soon",
+        device: "battery",
         message: "",
         activeOnly: true
       });

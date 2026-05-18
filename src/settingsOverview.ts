@@ -1,4 +1,5 @@
 import type { MonitorConfig } from "./config.js";
+import { formatTimeSlotSchedule } from "./timeslots.js";
 
 function enabledText(value: boolean): string {
   return value ? "enabled" : "disabled";
@@ -49,6 +50,8 @@ export function settingsOverview(config: MonitorConfig): string {
       `Alert cooldown: ${durationFromSeconds(alertCooldownSeconds)}`,
       `Request timeout: ${durationFromSeconds(config.requestTimeoutMs / 1000)}`,
       `Monitor failure alert: after ${config.maxConsecutiveMonitorFailures} consecutive failures`,
+      `Battery alert timeslots: ${formatTimeSlotSchedule(config.monitoring.battery)}`,
+      `SolarEdge alert timeslots: ${formatTimeSlotSchedule(config.monitoring.solarEdge)}`,
       "Deployment: Railway worker",
       "Logs: enabled through stdout/stderr"
     ]),
@@ -57,7 +60,6 @@ export function settingsOverview(config: MonitorConfig): string {
     formatList([
       `Max grid import: ${optionalWatts(config.thresholds.maxGridImportW)}`,
       `Max grid export: ${optionalWatts(config.thresholds.maxGridExportW)}`,
-      `Minimum PV production: ${optionalWatts(config.thresholds.minPvProductionW)}`,
       `Battery capacity: ${optionalKWh(config.thresholds.batteryCapacityKWh)}`,
       `Battery full notice: ${durationFromSeconds((config.thresholds.batteryFullNoticeMinutes ?? 5) * 60)} before full`,
       `Battery full alert reset: below ${config.thresholds.batteryFullAlertResetBelowPercent ?? 95}%`,
