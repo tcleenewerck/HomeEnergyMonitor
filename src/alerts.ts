@@ -4,6 +4,7 @@ import type { CurrentPowerFlow } from "./solaredge.js";
 export type Alert = {
   key: string;
   message: string;
+  sendOnceUntilCleared?: boolean;
 };
 
 function toWatts(power: number, unit: string): number {
@@ -18,8 +19,17 @@ function roundedWatts(power: number): number {
   return Math.round(power);
 }
 
+function normalizedNode(node: string): string {
+  return node.toLowerCase();
+}
+
 function hasRoute(flow: CurrentPowerFlow, from: string, to: string): boolean {
-  return flow.connections.some((connection) => connection.from === from && connection.to === to);
+  const normalizedFrom = normalizedNode(from);
+  const normalizedTo = normalizedNode(to);
+
+  return flow.connections.some(
+    (connection) => normalizedNode(connection.from) === normalizedFrom && normalizedNode(connection.to) === normalizedTo
+  );
 }
 
 function gridPowerWatts(flow: CurrentPowerFlow): number {
@@ -45,15 +55,13 @@ function batteryChargeLevel(flow: CurrentPowerFlow): number | undefined {
 function minutesUntilBatteryFull(flow: CurrentPowerFlow, batteryCapacityKWh: number): number | undefined {
   const chargeLevel = batteryChargeLevel(flow);
   const chargingPowerW = storagePowerWatts(flow);
-  const isCharging =
-    hasRoute(flow, "PV", "Storage") || hasRoute(flow, "GRID", "Storage") || hasRoute(flow, "LOAD", "Storage");
 
   if (
     chargeLevel === undefined ||
     chargeLevel < 0 ||
     chargeLevel >= 100 ||
     chargingPowerW <= 0 ||
-    !isCharging
+    !isBatteryCharging(flow)
   ) {
     return undefined;
   }
@@ -64,11 +72,16 @@ function minutesUntilBatteryFull(flow: CurrentPowerFlow, batteryCapacityKWh: num
   return (remainingKWh / chargingPowerKW) * 60;
 }
 
+function isBatteryCharging(flow: CurrentPowerFlow): boolean {
+  return hasRoute(flow, "PV", "Storage") || hasRoute(flow, "GRID", "Storage") || hasRoute(flow, "LOAD", "Storage");
+}
+
 export function evaluateAlerts(flow: CurrentPowerFlow, config: MonitorConfig): Alert[] {
   const alerts: Alert[] = [];
   const gridPowerW = gridPowerWatts(flow);
   const pvPowerW = pvPowerWatts(flow);
   const storagePowerW = storagePowerWatts(flow);
+  const chargeLevel = batteryChargeLevel(flow);
   const isImportingFromGrid = hasRoute(flow, "GRID", "LOAD");
   const isExportingToGrid =
     hasRoute(flow, "PV", "GRID") || hasRoute(flow, "LOAD", "GRID") || hasRoute(flow, "Storage", "GRID");
@@ -110,12 +123,19 @@ export function evaluateAlerts(flow: CurrentPowerFlow, config: MonitorConfig): A
     const noticeMinutes = config.thresholds.batteryFullNoticeMinutes ?? 5;
     const minChargeRateW = config.thresholds.minBatteryChargeRateW ?? 250;
 
-    if (minutesToFull !== undefined && minutesToFull <= noticeMinutes && storagePowerW >= minChargeRateW) {
+    if (chargeLevel !== undefined && chargeLevel >= 100) {
+      alerts.push({
+        key: "battery-full-soon",
+        message: "Battery is full.",
+        sendOnceUntilCleared: true
+      });
+    } else if (minutesToFull !== undefined && minutesToFull <= noticeMinutes && storagePowerW >= minChargeRateW) {
       alerts.push({
         key: "battery-full-soon",
         message:
           `Battery is expected to be full in about ${Math.max(1, Math.round(minutesToFull))} min ` +
-          `at ${roundedWatts(storagePowerW)} W charging power.`
+          `at ${roundedWatts(storagePowerW)} W charging power.`,
+        sendOnceUntilCleared: true
       });
     }
   }

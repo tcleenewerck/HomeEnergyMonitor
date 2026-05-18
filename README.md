@@ -47,6 +47,7 @@ minutes to full = remaining battery kWh / current charging kW * 60
 ```
 
 For a 10 kWh battery at 95% and 6 kW charging power, the app predicts about 5 minutes until full.
+If SolarEdge jumps straight to 100% before the 5-minute window is observed, the app sends a one-time `Battery is full.` fallback alert instead.
 
 ## SMS alerts
 

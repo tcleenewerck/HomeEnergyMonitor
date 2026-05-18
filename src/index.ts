@@ -8,16 +8,26 @@ const config = loadConfig();
 const alertSender = createAlertSender(config);
 const heartbeat = config.heartbeat ? new DailyHeartbeat(config.heartbeat) : undefined;
 const lastAlertAt = new Map<string, number>();
+const activeOnceAlertKeys = new Set<string>();
 
-function shouldSendAlert(key: string): boolean {
-  const lastSentAt = lastAlertAt.get(key);
+function shouldSendAlert(alert: ReturnType<typeof evaluateAlerts>[number]): boolean {
+  if (alert.sendOnceUntilCleared && activeOnceAlertKeys.has(alert.key)) {
+    return false;
+  }
+
+  const lastSentAt = lastAlertAt.get(alert.key);
   const now = Date.now();
 
   if (lastSentAt && now - lastSentAt < config.alertCooldownMs) {
     return false;
   }
 
-  lastAlertAt.set(key, now);
+  lastAlertAt.set(alert.key, now);
+
+  if (alert.sendOnceUntilCleared) {
+    activeOnceAlertKeys.add(alert.key);
+  }
+
   return true;
 }
 
@@ -38,8 +48,17 @@ async function monitorOnce(): Promise<void> {
     })
   );
 
-  for (const alert of evaluateAlerts(flow, config)) {
-    if (shouldSendAlert(alert.key)) {
+  const alerts = evaluateAlerts(flow, config);
+  const currentAlertKeys = new Set(alerts.map((alert) => alert.key));
+
+  for (const key of activeOnceAlertKeys) {
+    if (!currentAlertKeys.has(key)) {
+      activeOnceAlertKeys.delete(key);
+    }
+  }
+
+  for (const alert of alerts) {
+    if (shouldSendAlert(alert)) {
       await alertSender.send(alert);
     }
   }
