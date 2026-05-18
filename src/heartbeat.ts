@@ -60,6 +60,19 @@ export class DailyHeartbeat {
 
   constructor(private readonly config: NonNullable<MonitorConfig["heartbeat"]>) {}
 
+  async sendDeploymentOverview(settingsOverview: string): Promise<void> {
+    await sendSlackMessage(
+      this.config.slackWebhookUrl,
+      [
+        ":rocket: *Home Energy Monitor deployed*",
+        "```",
+        settingsOverview,
+        "```"
+      ].join("\n")
+    );
+    console.log("Deployment settings overview sent to heartbeat channel.");
+  }
+
   async sendIfDue(flow: CurrentPowerFlow, now = new Date()): Promise<void> {
     const local = localDateHour(now, this.config.timezone);
 

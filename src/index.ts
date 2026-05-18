@@ -2,6 +2,7 @@ import { evaluateAlerts } from "./alerts.js";
 import { createAlertSender } from "./alertSender.js";
 import { loadConfig } from "./config.js";
 import { DailyHeartbeat } from "./heartbeat.js";
+import { settingsOverview } from "./settingsOverview.js";
 import { fetchCurrentPowerFlow } from "./solaredge.js";
 
 const config = loadConfig();
@@ -67,14 +68,18 @@ async function monitorOnce(): Promise<void> {
 }
 
 async function startMonitor(): Promise<void> {
-  console.log(`Starting Home Energy Monitor. Polling every ${config.pollIntervalMs / 1000}s.`);
-  console.log(`SMS alerts are ${config.twilio ? "enabled" : "disabled"}.`);
-  console.log(`Slack alerts are ${config.slack ? "enabled" : "disabled"}.`);
-  console.log(
-    config.heartbeat
-      ? `Heartbeat is enabled at hour ${config.heartbeat.hour} in ${config.heartbeat.timezone}.`
-      : "Heartbeat is disabled."
-  );
+  const overview = settingsOverview(config);
+  console.log(overview);
+
+  if (heartbeat) {
+    heartbeat.sendDeploymentOverview(overview).catch((error: unknown) => {
+      console.error(
+        `Could not send deployment settings overview to heartbeat channel: ${
+          error instanceof Error ? error.message : error
+        }`
+      );
+    });
+  }
 
   await monitorOnce();
   setInterval(() => {

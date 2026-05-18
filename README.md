@@ -29,6 +29,8 @@ And start with:
 npm start
 ```
 
+On startup, the worker prints a deployment settings overview to the Railway logs. When the daily heartbeat is enabled, it also sends that overview to the heartbeat Slack channel after deployment. Keep that overview complete and up to date whenever you add, remove, or rename a configuration option, alert condition, notification channel, or deployment assumption.
+
 ## Alert conditions
 
 Set any of these environment variables to enable an alert:
