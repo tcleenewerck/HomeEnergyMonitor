@@ -7,6 +7,9 @@ export type MonitorConfig = {
     maxGridImportW?: number;
     maxGridExportW?: number;
     minPvProductionW?: number;
+    batteryCapacityKWh?: number;
+    batteryFullNoticeMinutes?: number;
+    minBatteryChargeRateW?: number;
   };
   twilio?: {
     accountSid: string;
@@ -160,7 +163,10 @@ export function loadConfig(): MonitorConfig {
     thresholds: {
       maxGridImportW: optionalNumberEnv("MAX_GRID_IMPORT_W"),
       maxGridExportW: optionalNumberEnv("MAX_GRID_EXPORT_W"),
-      minPvProductionW: optionalNumberEnv("MIN_PV_PRODUCTION_W")
+      minPvProductionW: optionalNumberEnv("MIN_PV_PRODUCTION_W"),
+      batteryCapacityKWh: optionalNumberEnv("BATTERY_CAPACITY_KWH"),
+      batteryFullNoticeMinutes: optionalNumberEnv("BATTERY_FULL_NOTICE_MINUTES") ?? 5,
+      minBatteryChargeRateW: optionalNumberEnv("MIN_BATTERY_CHARGE_RATE_W") ?? 250
     },
     twilio: loadTwilioConfig(),
     slack: loadSlackConfig(),

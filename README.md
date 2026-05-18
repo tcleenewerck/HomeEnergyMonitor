@@ -36,6 +36,17 @@ Set any of these environment variables to enable an alert:
 - `MAX_GRID_IMPORT_W`: alert when the house imports more than this from the grid.
 - `MAX_GRID_EXPORT_W`: alert when the house exports more than this to the grid.
 - `MIN_PV_PRODUCTION_W`: alert when solar production drops below this value.
+- `BATTERY_CAPACITY_KWH`: enable a battery-full-soon alert using the usable battery capacity, for example `10`.
+- `BATTERY_FULL_NOTICE_MINUTES`: alert when the battery is predicted to be full within this many minutes. Defaults to `5`.
+- `MIN_BATTERY_CHARGE_RATE_W`: ignore slow trickle charging below this rate. Defaults to `250`.
+
+The battery-full-soon alert uses the SolarEdge battery charge level and current storage charging power:
+
+```text
+minutes to full = remaining battery kWh / current charging kW * 60
+```
+
+For a 10 kWh battery at 95% and 6 kW charging power, the app predicts about 5 minutes until full.
 
 ## SMS alerts
 
