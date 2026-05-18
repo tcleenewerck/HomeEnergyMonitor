@@ -60,6 +60,7 @@ export function settingsOverview(config: MonitorConfig): string {
       `Minimum PV production: ${optionalWatts(config.thresholds.minPvProductionW)}`,
       `Battery capacity: ${optionalKWh(config.thresholds.batteryCapacityKWh)}`,
       `Battery full notice: ${durationFromSeconds((config.thresholds.batteryFullNoticeMinutes ?? 5) * 60)} before full`,
+      `Battery full alert reset: below ${config.thresholds.batteryFullAlertResetBelowPercent ?? 95}%`,
       `Minimum battery charge rate: ${optionalWatts(config.thresholds.minBatteryChargeRateW)}`,
       `Minimum battery level: ${optionalPercent(config.thresholds.minBatteryLevelPercent)}`
     ]),

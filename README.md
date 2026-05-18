@@ -54,6 +54,7 @@ Set any of these environment variables to enable an alert:
 - `MIN_PV_PRODUCTION_W`: alert when solar production drops below this value.
 - `BATTERY_CAPACITY_KWH`: enable a battery-full-soon alert using the usable battery capacity, for example `10`.
 - `BATTERY_FULL_NOTICE_MINUTES`: alert when the battery is predicted to be full within this many minutes. Defaults to `5`.
+- `BATTERY_FULL_ALERT_RESET_BELOW_PERCENT`: after a full/full-soon alert, do not send another one until the battery drops below this charge level. Defaults to `95`.
 - `MIN_BATTERY_CHARGE_RATE_W`: ignore slow trickle charging below this rate. Defaults to `250`.
 - `MIN_BATTERY_LEVEL_PERCENT`: alert once when the battery drops below this charge level, for example `50`.
 
@@ -65,6 +66,7 @@ minutes to full = remaining battery kWh / current charging kW * 60
 
 For a 10 kWh battery at 95% and 6 kW charging power, the app predicts about 5 minutes until full.
 If SolarEdge jumps straight to 100% before the 5-minute window is observed, the app sends a one-time `Battery is full.` fallback alert instead.
+After a full/full-soon alert, the app keeps that alert active until the battery drops below `BATTERY_FULL_ALERT_RESET_BELOW_PERCENT`, so small top-ups near 100% do not send repeat alerts.
 
 ## SMS alerts
 

@@ -11,6 +11,7 @@ export type MonitorConfig = {
     minPvProductionW?: number;
     batteryCapacityKWh?: number;
     batteryFullNoticeMinutes?: number;
+    batteryFullAlertResetBelowPercent?: number;
     minBatteryChargeRateW?: number;
     minBatteryLevelPercent?: number;
   };
@@ -181,6 +182,7 @@ export function loadConfig(): MonitorConfig {
       minPvProductionW: optionalNumberEnv("MIN_PV_PRODUCTION_W"),
       batteryCapacityKWh: optionalNumberEnv("BATTERY_CAPACITY_KWH"),
       batteryFullNoticeMinutes: optionalNumberEnv("BATTERY_FULL_NOTICE_MINUTES") ?? 5,
+      batteryFullAlertResetBelowPercent: optionalNumberEnv("BATTERY_FULL_ALERT_RESET_BELOW_PERCENT") ?? 95,
       minBatteryChargeRateW: optionalNumberEnv("MIN_BATTERY_CHARGE_RATE_W") ?? 250,
       minBatteryLevelPercent: optionalNumberEnv("MIN_BATTERY_LEVEL_PERCENT")
     },

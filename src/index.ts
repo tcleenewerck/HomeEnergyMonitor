@@ -62,7 +62,11 @@ async function monitorOnce(): Promise<void> {
   }
 
   for (const alert of alerts) {
-    if (shouldSendAlert(alert)) {
+    if (alert.resetOnceStateBeforeSending) {
+      activeOnceAlertKeys.delete(alert.key);
+    }
+
+    if (!alert.activeOnly && shouldSendAlert(alert)) {
       await alertSender.send(alert);
     }
   }

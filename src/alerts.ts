@@ -4,6 +4,8 @@ import type { CurrentPowerFlow } from "./solaredge.js";
 export type Alert = {
   key: string;
   message: string;
+  activeOnly?: boolean;
+  resetOnceStateBeforeSending?: boolean;
   sendOnceUntilCleared?: boolean;
 };
 
@@ -134,11 +136,15 @@ export function evaluateAlerts(flow: CurrentPowerFlow, config: MonitorConfig): A
     const minutesToFull = minutesUntilBatteryFull(flow, config.thresholds.batteryCapacityKWh);
     const noticeMinutes = config.thresholds.batteryFullNoticeMinutes ?? 5;
     const minChargeRateW = config.thresholds.minBatteryChargeRateW ?? 250;
+    const resetBelowPercent = config.thresholds.batteryFullAlertResetBelowPercent ?? 95;
+
+    const resetOnceStateBeforeSending = chargeLevel !== undefined && chargeLevel < resetBelowPercent;
 
     if (chargeLevel !== undefined && chargeLevel >= 100) {
       alerts.push({
         key: "battery-full-soon",
         message: "Battery is full.",
+        resetOnceStateBeforeSending,
         sendOnceUntilCleared: true
       });
     } else if (minutesToFull !== undefined && minutesToFull <= noticeMinutes && storagePowerW >= minChargeRateW) {
@@ -147,7 +153,14 @@ export function evaluateAlerts(flow: CurrentPowerFlow, config: MonitorConfig): A
         message:
           `Battery is expected to be full in about ${Math.max(1, Math.round(minutesToFull))} min ` +
           `at ${roundedWatts(storagePowerW)} W charging power.`,
+        resetOnceStateBeforeSending,
         sendOnceUntilCleared: true
+      });
+    } else if (chargeLevel !== undefined && chargeLevel >= resetBelowPercent) {
+      alerts.push({
+        key: "battery-full-soon",
+        message: "",
+        activeOnly: true
       });
     }
   }
