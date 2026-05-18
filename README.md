@@ -47,7 +47,7 @@ If SolarEdge polling fails repeatedly, the worker keeps running and sends an ale
 
 Battery and SolarEdge alerts are only sent inside their configured alert timeslots. The worker still monitors and logs outside those windows. The default alert timeslot for both is `07:00-18:00` in `Europe/Brussels`, so evening alerts are suppressed unless you change the window.
 
-- `MONITORING_TIMEZONE`: timezone used to evaluate alert timeslots. Defaults to `Europe/Brussels`.
+- `ALERT_TIMEZONE`: timezone used to evaluate alert timeslots. Defaults to `Europe/Brussels`.
 - `BATTERY_ALERT_TIMESLOTS`: comma-separated alert windows for battery alerts, for example `07:00-18:00` or `06:30-11:00,13:00-18:00`. Use `always` for all-day alerts.
 - `SOLAREDGE_ALERT_TIMESLOTS`: comma-separated alert windows for SolarEdge alerts and repeated SolarEdge poll-failure alerts. Use `always` for all-day alerts.
 

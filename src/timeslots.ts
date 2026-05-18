@@ -14,7 +14,7 @@ function validateTimezone(timezone: string): void {
   try {
     new Intl.DateTimeFormat("en-GB", { timeZone: timezone }).format(new Date());
   } catch {
-    throw new Error(`Invalid monitoring timezone "${timezone}". Use an IANA timezone such as Europe/Brussels.`);
+    throw new Error(`Invalid alert timezone "${timezone}". Use an IANA timezone such as Europe/Brussels.`);
   }
 }
 

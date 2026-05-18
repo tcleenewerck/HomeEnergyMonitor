@@ -162,7 +162,7 @@ export function loadConfig(): MonitorConfig {
   const alertCooldownSeconds = numberEnv("ALERT_COOLDOWN_SECONDS", 900);
   const requestTimeoutSeconds = numberEnv("REQUEST_TIMEOUT_SECONDS", 15);
   const maxConsecutiveMonitorFailures = numberEnv("MAX_CONSECUTIVE_MONITOR_FAILURES", 3);
-  const monitoringTimezone = optionalEnv("MONITORING_TIMEZONE") ?? "Europe/Brussels";
+  const alertTimezone = optionalEnv("ALERT_TIMEZONE") ?? "Europe/Brussels";
   const batteryAlertTimeslots = optionalEnv("BATTERY_ALERT_TIMESLOTS") ?? "07:00-18:00";
   const solarEdgeAlertTimeslots = optionalEnv("SOLAREDGE_ALERT_TIMESLOTS") ?? "07:00-18:00";
 
@@ -186,9 +186,9 @@ export function loadConfig(): MonitorConfig {
     requestTimeoutMs: requestTimeoutSeconds * 1000,
     maxConsecutiveMonitorFailures,
     monitoring: {
-      timezone: monitoringTimezone,
-      battery: parseTimeSlotSchedule(batteryAlertTimeslots, monitoringTimezone, "BATTERY_ALERT_TIMESLOTS"),
-      solarEdge: parseTimeSlotSchedule(solarEdgeAlertTimeslots, monitoringTimezone, "SOLAREDGE_ALERT_TIMESLOTS")
+      timezone: alertTimezone,
+      battery: parseTimeSlotSchedule(batteryAlertTimeslots, alertTimezone, "BATTERY_ALERT_TIMESLOTS"),
+      solarEdge: parseTimeSlotSchedule(solarEdgeAlertTimeslots, alertTimezone, "SOLAREDGE_ALERT_TIMESLOTS")
     },
     thresholds: {
       maxGridImportW: optionalNumberEnv("MAX_GRID_IMPORT_W"),
