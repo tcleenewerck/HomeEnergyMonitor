@@ -3,6 +3,8 @@ export type MonitorConfig = {
   solarEdgeApiKey: string;
   pollIntervalMs: number;
   alertCooldownMs: number;
+  requestTimeoutMs: number;
+  maxConsecutiveMonitorFailures: number;
   thresholds: {
     maxGridImportW?: number;
     maxGridExportW?: number;
@@ -151,9 +153,19 @@ function loadHeartbeatConfig(): MonitorConfig["heartbeat"] {
 export function loadConfig(): MonitorConfig {
   const pollIntervalSeconds = numberEnv("POLL_INTERVAL_SECONDS", 60);
   const alertCooldownSeconds = numberEnv("ALERT_COOLDOWN_SECONDS", 900);
+  const requestTimeoutSeconds = numberEnv("REQUEST_TIMEOUT_SECONDS", 15);
+  const maxConsecutiveMonitorFailures = numberEnv("MAX_CONSECUTIVE_MONITOR_FAILURES", 3);
 
   if (pollIntervalSeconds < 10) {
     throw new Error("POLL_INTERVAL_SECONDS must be at least 10.");
+  }
+
+  if (requestTimeoutSeconds < 1) {
+    throw new Error("REQUEST_TIMEOUT_SECONDS must be at least 1.");
+  }
+
+  if (!Number.isInteger(maxConsecutiveMonitorFailures) || maxConsecutiveMonitorFailures < 1) {
+    throw new Error("MAX_CONSECUTIVE_MONITOR_FAILURES must be an integer of at least 1.");
   }
 
   return {
@@ -161,6 +173,8 @@ export function loadConfig(): MonitorConfig {
     solarEdgeApiKey: requiredEnv("SOLAREDGE_API_KEY"),
     pollIntervalMs: pollIntervalSeconds * 1000,
     alertCooldownMs: alertCooldownSeconds * 1000,
+    requestTimeoutMs: requestTimeoutSeconds * 1000,
+    maxConsecutiveMonitorFailures,
     thresholds: {
       maxGridImportW: optionalNumberEnv("MAX_GRID_IMPORT_W"),
       maxGridExportW: optionalNumberEnv("MAX_GRID_EXPORT_W"),

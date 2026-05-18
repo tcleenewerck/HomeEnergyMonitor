@@ -31,6 +31,20 @@ npm start
 
 On startup, the worker prints a deployment settings overview to the Railway logs. When the daily heartbeat is enabled, it also sends that overview to the heartbeat Slack channel after deployment. Keep that overview complete and up to date whenever you add, remove, or rename a configuration option, alert condition, notification channel, or deployment assumption.
 
+## Deployment sanity checks
+
+Before relying on a deployment, verify:
+
+- External calls have a finite timeout through `REQUEST_TIMEOUT_SECONDS`.
+- Repeated SolarEdge polling failures trigger an alert through `MAX_CONSECUTIVE_MONITOR_FAILURES`.
+- The local `.env` file is not world-readable. On macOS/Linux, run `chmod 600 .env`.
+
+## Monitoring reliability
+
+External HTTP requests time out after `REQUEST_TIMEOUT_SECONDS`, which defaults to `15`.
+
+If SolarEdge polling fails repeatedly, the worker keeps running and sends an alert after `MAX_CONSECUTIVE_MONITOR_FAILURES` consecutive failures. This defaults to `3` and clears once a later SolarEdge poll succeeds.
+
 ## Alert conditions
 
 Set any of these environment variables to enable an alert:

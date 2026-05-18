@@ -20,8 +20,11 @@ class TwilioSmsAlertSender implements AlertSender {
   name = "twilio-sms";
   private readonly client: ReturnType<typeof twilio>;
 
-  constructor(private readonly config: NonNullable<MonitorConfig["twilio"]>) {
-    this.client = twilio(config.accountSid, config.authToken);
+  constructor(
+    private readonly config: NonNullable<MonitorConfig["twilio"]>,
+    timeoutMs: number
+  ) {
+    this.client = twilio(config.accountSid, config.authToken, { timeout: timeoutMs });
   }
 
   async send(alert: Alert): Promise<void> {
@@ -36,10 +39,13 @@ class TwilioSmsAlertSender implements AlertSender {
 class SlackAlertSender implements AlertSender {
   name = "slack";
 
-  constructor(private readonly config: NonNullable<MonitorConfig["slack"]>) {}
+  constructor(
+    private readonly config: NonNullable<MonitorConfig["slack"]>,
+    private readonly timeoutMs: number
+  ) {}
 
   async send(alert: Alert): Promise<void> {
-    await sendSlackMessage(this.config.webhookUrl, `:warning: *Home Energy Monitor*\n${alert.message}`);
+    await sendSlackMessage(this.config.webhookUrl, `:warning: *Home Energy Monitor*\n${alert.message}`, this.timeoutMs);
   }
 }
 
@@ -57,11 +63,11 @@ export function createAlertSenders(config: MonitorConfig): AlertSender[] {
   const senders: AlertSender[] = [new ConsoleAlertSender()];
 
   if (config.twilio) {
-    senders.push(new TwilioSmsAlertSender(config.twilio));
+    senders.push(new TwilioSmsAlertSender(config.twilio, config.requestTimeoutMs));
   }
 
   if (config.slack) {
-    senders.push(new SlackAlertSender(config.slack));
+    senders.push(new SlackAlertSender(config.slack, config.requestTimeoutMs));
   }
 
   return senders;

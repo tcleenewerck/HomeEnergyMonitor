@@ -27,13 +27,16 @@ type SolarEdgeCurrentPowerFlowResponse = {
 export async function fetchCurrentPowerFlow(options: {
   siteId: string;
   apiKey: string;
+  timeoutMs: number;
 }): Promise<CurrentPowerFlow> {
   const url = new URL(
     `https://monitoringapi.solaredge.com/site/${encodeURIComponent(options.siteId)}/currentPowerFlow.json`
   );
   url.searchParams.set("api_key", options.apiKey);
 
-  const response = await fetch(url);
+  const response = await fetch(url, {
+    signal: AbortSignal.timeout(options.timeoutMs)
+  });
 
   if (!response.ok) {
     const body = await response.text();

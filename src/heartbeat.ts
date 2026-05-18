@@ -58,7 +58,10 @@ function heartbeatMessage(flow: CurrentPowerFlow, timezone: string): string {
 export class DailyHeartbeat {
   private lastSentDateKey?: string;
 
-  constructor(private readonly config: NonNullable<MonitorConfig["heartbeat"]>) {}
+  constructor(
+    private readonly config: NonNullable<MonitorConfig["heartbeat"]>,
+    private readonly timeoutMs: number
+  ) {}
 
   async sendDeploymentOverview(settingsOverview: string): Promise<void> {
     await sendSlackMessage(
@@ -68,7 +71,8 @@ export class DailyHeartbeat {
         "```",
         settingsOverview,
         "```"
-      ].join("\n")
+      ].join("\n"),
+      this.timeoutMs
     );
     console.log("Deployment settings overview sent to heartbeat channel.");
   }
@@ -80,7 +84,7 @@ export class DailyHeartbeat {
       return;
     }
 
-    await sendSlackMessage(this.config.slackWebhookUrl, heartbeatMessage(flow, this.config.timezone));
+    await sendSlackMessage(this.config.slackWebhookUrl, heartbeatMessage(flow, this.config.timezone), this.timeoutMs);
     this.lastSentDateKey = local.dateKey;
     console.log(`Heartbeat sent for ${local.dateKey}.`);
   }

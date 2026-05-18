@@ -47,6 +47,8 @@ export function settingsOverview(config: MonitorConfig): string {
     formatList([
       `Polling interval: every ${durationFromSeconds(pollIntervalSeconds)}`,
       `Alert cooldown: ${durationFromSeconds(alertCooldownSeconds)}`,
+      `Request timeout: ${durationFromSeconds(config.requestTimeoutMs / 1000)}`,
+      `Monitor failure alert: after ${config.maxConsecutiveMonitorFailures} consecutive failures`,
       "Deployment: Railway worker",
       "Logs: enabled through stdout/stderr"
     ]),

@@ -7,9 +7,10 @@ import { fetchCurrentPowerFlow } from "./solaredge.js";
 
 const config = loadConfig();
 const alertSender = createAlertSender(config);
-const heartbeat = config.heartbeat ? new DailyHeartbeat(config.heartbeat) : undefined;
+const heartbeat = config.heartbeat ? new DailyHeartbeat(config.heartbeat, config.requestTimeoutMs) : undefined;
 const lastAlertAt = new Map<string, number>();
 const activeOnceAlertKeys = new Set<string>();
+let consecutiveMonitorFailures = 0;
 
 function shouldSendAlert(alert: ReturnType<typeof evaluateAlerts>[number]): boolean {
   if (alert.sendOnceUntilCleared && activeOnceAlertKeys.has(alert.key)) {
@@ -35,8 +36,10 @@ function shouldSendAlert(alert: ReturnType<typeof evaluateAlerts>[number]): bool
 async function monitorOnce(): Promise<void> {
   const flow = await fetchCurrentPowerFlow({
     siteId: config.solarEdgeSiteId,
-    apiKey: config.solarEdgeApiKey
+    apiKey: config.solarEdgeApiKey,
+    timeoutMs: config.requestTimeoutMs
   });
+  consecutiveMonitorFailures = 0;
 
   console.log(
     JSON.stringify({
@@ -67,6 +70,37 @@ async function monitorOnce(): Promise<void> {
   await heartbeat?.sendIfDue(flow);
 }
 
+async function handleMonitorError(error: unknown): Promise<void> {
+  consecutiveMonitorFailures += 1;
+  const message = error instanceof Error ? error.message : String(error);
+
+  console.error(`Monitor poll failed (${consecutiveMonitorFailures} consecutive): ${message}`);
+
+  if (consecutiveMonitorFailures < config.maxConsecutiveMonitorFailures) {
+    return;
+  }
+
+  const alert = {
+    key: "monitor-poll-failure",
+    message:
+      `SolarEdge monitoring has failed ${consecutiveMonitorFailures} times in a row. ` +
+      `Latest error: ${message}`,
+    sendOnceUntilCleared: true
+  };
+
+  if (shouldSendAlert(alert)) {
+    await alertSender.send(alert);
+  }
+}
+
+async function runMonitorCycle(): Promise<void> {
+  try {
+    await monitorOnce();
+  } catch (error: unknown) {
+    await handleMonitorError(error);
+  }
+}
+
 async function startMonitor(): Promise<void> {
   const overview = settingsOverview(config);
   console.log(overview);
@@ -81,10 +115,10 @@ async function startMonitor(): Promise<void> {
     });
   }
 
-  await monitorOnce();
+  await runMonitorCycle();
   setInterval(() => {
-    monitorOnce().catch((error: unknown) => {
-      console.error(error instanceof Error ? error.message : error);
+    runMonitorCycle().catch((error: unknown) => {
+      console.error(`Could not send monitor failure alert: ${error instanceof Error ? error.message : error}`);
     });
   }, config.pollIntervalMs);
 }
