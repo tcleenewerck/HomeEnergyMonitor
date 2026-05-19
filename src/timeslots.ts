@@ -4,7 +4,7 @@ export type TimeSlot = {
 };
 
 export type TimeSlotSchedule = {
-  timezone: string;
+  timezone?: string;
   slots: TimeSlot[];
 };
 
@@ -64,6 +64,10 @@ export function parseTimeSlotSchedule(value: string, timezone: string, envName: 
   return { timezone, slots };
 }
 
+export function alwaysTimeSlotSchedule(): TimeSlotSchedule {
+  return { slots: [] };
+}
+
 function minutesInTimezone(date: Date, timezone: string): number {
   const parts = new Intl.DateTimeFormat("en-GB", {
     hour: "2-digit",
@@ -87,6 +91,10 @@ export function isWithinTimeSlotSchedule(schedule: TimeSlotSchedule, date = new 
     return true;
   }
 
+  if (!schedule.timezone) {
+    throw new Error("A timezone is required to evaluate alert timeslots.");
+  }
+
   const currentMinute = minutesInTimezone(date, schedule.timezone);
 
   return schedule.slots.some((slot) => {
@@ -106,7 +114,7 @@ function formatTime(minutes: number): string {
 
 export function formatTimeSlotSchedule(schedule: TimeSlotSchedule): string {
   if (schedule.slots.length === 0) {
-    return `always (${schedule.timezone})`;
+    return schedule.timezone ? `always (${schedule.timezone})` : "always";
   }
 
   return `${schedule.slots

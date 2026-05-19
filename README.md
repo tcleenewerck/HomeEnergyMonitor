@@ -45,11 +45,11 @@ External HTTP requests time out after `REQUEST_TIMEOUT_SECONDS`, which defaults 
 
 If SolarEdge polling fails repeatedly, the worker keeps running and sends an alert after `MAX_CONSECUTIVE_MONITOR_FAILURES` consecutive failures. This defaults to `3` and clears once a later SolarEdge poll succeeds.
 
-Battery and SolarEdge alerts are only sent inside their configured alert timeslots. The worker still monitors and logs outside those windows. The default alert timeslot for both is `07:00-18:00` in `Europe/Brussels`, so evening alerts are suppressed unless you change the window.
+Battery and SolarEdge alerts are only sent inside their configured alert timeslots. The worker still monitors and logs outside those windows. The default battery alert timeslot is `07:00-18:00` in `Europe/Brussels`, so evening battery alerts are suppressed unless you change the window. SolarEdge alerts run all day when `SOLAREDGE_ALERT_TIMESLOTS` is unset or blank.
 
 - `ALERT_TIMEZONE`: timezone used to evaluate alert timeslots. Defaults to `Europe/Brussels`.
 - `BATTERY_ALERT_TIMESLOTS`: comma-separated alert windows for battery alerts, for example `07:00-18:00` or `06:30-11:00,13:00-18:00`. Use `always` for all-day alerts.
-- `SOLAREDGE_ALERT_TIMESLOTS`: comma-separated alert windows for SolarEdge alerts and repeated SolarEdge poll-failure alerts. Use `always` for all-day alerts.
+- `SOLAREDGE_ALERT_TIMESLOTS`: comma-separated alert windows for SolarEdge alerts and repeated SolarEdge poll-failure alerts. Leave unset or blank, or use `always`, for all-day alerts.
 
 ## Alert conditions
 

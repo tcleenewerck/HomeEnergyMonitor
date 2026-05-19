@@ -1,4 +1,4 @@
-import { parseTimeSlotSchedule, type TimeSlotSchedule } from "./timeslots.js";
+import { alwaysTimeSlotSchedule, parseTimeSlotSchedule, type TimeSlotSchedule } from "./timeslots.js";
 
 export type MonitorConfig = {
   solarEdgeSiteId: string;
@@ -164,7 +164,7 @@ export function loadConfig(): MonitorConfig {
   const maxConsecutiveMonitorFailures = numberEnv("MAX_CONSECUTIVE_MONITOR_FAILURES", 3);
   const alertTimezone = optionalEnv("ALERT_TIMEZONE") ?? "Europe/Brussels";
   const batteryAlertTimeslots = optionalEnv("BATTERY_ALERT_TIMESLOTS") ?? "07:00-18:00";
-  const solarEdgeAlertTimeslots = optionalEnv("SOLAREDGE_ALERT_TIMESLOTS") ?? "07:00-18:00";
+  const solarEdgeAlertTimeslots = optionalEnv("SOLAREDGE_ALERT_TIMESLOTS");
 
   if (pollIntervalSeconds < 10) {
     throw new Error("POLL_INTERVAL_SECONDS must be at least 10.");
@@ -188,7 +188,9 @@ export function loadConfig(): MonitorConfig {
     monitoring: {
       timezone: alertTimezone,
       battery: parseTimeSlotSchedule(batteryAlertTimeslots, alertTimezone, "BATTERY_ALERT_TIMESLOTS"),
-      solarEdge: parseTimeSlotSchedule(solarEdgeAlertTimeslots, alertTimezone, "SOLAREDGE_ALERT_TIMESLOTS")
+      solarEdge: solarEdgeAlertTimeslots
+        ? parseTimeSlotSchedule(solarEdgeAlertTimeslots, alertTimezone, "SOLAREDGE_ALERT_TIMESLOTS")
+        : alwaysTimeSlotSchedule()
     },
     thresholds: {
       maxGridImportW: optionalNumberEnv("MAX_GRID_IMPORT_W"),
