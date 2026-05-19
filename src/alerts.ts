@@ -131,11 +131,17 @@ export function evaluateAlerts(flow: CurrentPowerFlow, config: MonitorConfig): A
 
     if (chargeLevel !== undefined && chargeLevel >= 100) {
       alerts.push({
-        key: "battery-full-soon",
+        key: "battery-full",
         device: "battery",
         message: "Battery is full.",
         resetOnceStateBeforeSending,
         sendOnceUntilCleared: true
+      });
+      alerts.push({
+        key: "battery-full-soon",
+        device: "battery",
+        message: "",
+        activeOnly: true
       });
     } else if (minutesToFull !== undefined && minutesToFull <= noticeMinutes && storagePowerW >= minChargeRateW) {
       alerts.push({
@@ -150,6 +156,12 @@ export function evaluateAlerts(flow: CurrentPowerFlow, config: MonitorConfig): A
     } else if (chargeLevel !== undefined && chargeLevel >= resetBelowPercent) {
       alerts.push({
         key: "battery-full-soon",
+        device: "battery",
+        message: "",
+        activeOnly: true
+      });
+      alerts.push({
+        key: "battery-full",
         device: "battery",
         message: "",
         activeOnly: true
