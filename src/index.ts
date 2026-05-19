@@ -1,43 +1,16 @@
+import { AlertProcessor } from "./alertProcessor.js";
 import { evaluateAlerts } from "./alerts.js";
 import { createAlertSender } from "./alertSender.js";
 import { loadConfig } from "./config.js";
 import { DailyHeartbeat } from "./heartbeat.js";
 import { settingsOverview } from "./settingsOverview.js";
 import { fetchCurrentPowerFlow } from "./solaredge.js";
-import { isWithinTimeSlotSchedule } from "./timeslots.js";
 
 const config = loadConfig();
 const alertSender = createAlertSender(config);
+const alertProcessor = new AlertProcessor(config, alertSender);
 const heartbeat = config.heartbeat ? new DailyHeartbeat(config.heartbeat, config.requestTimeoutMs) : undefined;
-const lastAlertAt = new Map<string, number>();
-const activeOnceAlertKeys = new Set<string>();
 let consecutiveMonitorFailures = 0;
-
-function shouldSendAlert(alert: ReturnType<typeof evaluateAlerts>[number]): boolean {
-  if (alert.sendOnceUntilCleared && activeOnceAlertKeys.has(alert.key)) {
-    return false;
-  }
-
-  const lastSentAt = lastAlertAt.get(alert.key);
-  const now = Date.now();
-
-  if (lastSentAt && now - lastSentAt < config.alertCooldownMs) {
-    return false;
-  }
-
-  lastAlertAt.set(alert.key, now);
-
-  if (alert.sendOnceUntilCleared) {
-    activeOnceAlertKeys.add(alert.key);
-  }
-
-  return true;
-}
-
-function isAlertInMonitoringTimeslot(alert: ReturnType<typeof evaluateAlerts>[number]): boolean {
-  const schedule = alert.device === "battery" ? config.monitoring.battery : config.monitoring.solarEdge;
-  return isWithinTimeSlotSchedule(schedule);
-}
 
 async function monitorOnce(): Promise<void> {
   const flow = await fetchCurrentPowerFlow({
@@ -59,31 +32,7 @@ async function monitorOnce(): Promise<void> {
   );
 
   const alerts = evaluateAlerts(flow, config);
-  const currentAlertKeys = new Set(alerts.map((alert) => alert.key));
-
-  for (const key of activeOnceAlertKeys) {
-    if (!currentAlertKeys.has(key)) {
-      activeOnceAlertKeys.delete(key);
-    }
-  }
-
-  for (const alert of alerts) {
-    if (alert.resetOnceStateBeforeSending) {
-      activeOnceAlertKeys.delete(alert.key);
-    }
-
-    if (alert.activeOnly) {
-      if (alert.primeOnceState) {
-        activeOnceAlertKeys.add(alert.key);
-      }
-
-      continue;
-    }
-
-    if (isAlertInMonitoringTimeslot(alert) && shouldSendAlert(alert)) {
-      await alertSender.send(alert);
-    }
-  }
+  await alertProcessor.process(alerts);
 
   await heartbeat?.sendIfDue(flow);
 }
@@ -107,9 +56,7 @@ async function handleMonitorError(error: unknown): Promise<void> {
     sendOnceUntilCleared: true
   };
 
-  if (isAlertInMonitoringTimeslot(alert) && shouldSendAlert(alert)) {
-    await alertSender.send(alert);
-  }
+  await alertProcessor.process([alert], new Date(), { clearMissingAlerts: false });
 }
 
 async function runMonitorCycle(): Promise<void> {
