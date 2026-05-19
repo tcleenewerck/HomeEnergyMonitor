@@ -72,7 +72,15 @@ async function monitorOnce(): Promise<void> {
       activeOnceAlertKeys.delete(alert.key);
     }
 
-    if (!alert.activeOnly && isAlertInMonitoringTimeslot(alert) && shouldSendAlert(alert)) {
+    if (alert.activeOnly) {
+      if (alert.primeOnceState) {
+        activeOnceAlertKeys.add(alert.key);
+      }
+
+      continue;
+    }
+
+    if (isAlertInMonitoringTimeslot(alert) && shouldSendAlert(alert)) {
       await alertSender.send(alert);
     }
   }

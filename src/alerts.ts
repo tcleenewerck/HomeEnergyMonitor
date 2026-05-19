@@ -6,6 +6,7 @@ export type Alert = {
   device: "battery" | "solaredge";
   message: string;
   activeOnly?: boolean;
+  primeOnceState?: boolean;
   resetOnceStateBeforeSending?: boolean;
   sendOnceUntilCleared?: boolean;
 };
@@ -141,6 +142,21 @@ export function evaluateAlerts(flow: CurrentPowerFlow, config: MonitorConfig): A
         key: "battery-full-soon",
         device: "battery",
         message: "",
+        activeOnly: true,
+        primeOnceState: true
+      });
+    } else if (chargeLevel !== undefined && chargeLevel >= resetBelowPercent) {
+      alerts.push({
+        key: "battery-full-soon",
+        device: "battery",
+        message: "",
+        activeOnly: true,
+        primeOnceState: true
+      });
+      alerts.push({
+        key: "battery-full",
+        device: "battery",
+        message: "",
         activeOnly: true
       });
     } else if (minutesToFull !== undefined && minutesToFull <= noticeMinutes && storagePowerW >= minChargeRateW) {
@@ -152,19 +168,6 @@ export function evaluateAlerts(flow: CurrentPowerFlow, config: MonitorConfig): A
           `at ${roundedWatts(storagePowerW)} W charging power.`,
         resetOnceStateBeforeSending,
         sendOnceUntilCleared: true
-      });
-    } else if (chargeLevel !== undefined && chargeLevel >= resetBelowPercent) {
-      alerts.push({
-        key: "battery-full-soon",
-        device: "battery",
-        message: "",
-        activeOnly: true
-      });
-      alerts.push({
-        key: "battery-full",
-        device: "battery",
-        message: "",
-        activeOnly: true
       });
     }
   }

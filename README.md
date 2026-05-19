@@ -71,7 +71,7 @@ minutes to full = remaining battery kWh / current charging kW * 60
 
 For a 10 kWh battery at 95% and 6 kW charging power, the app predicts about 5 minutes until full.
 When SolarEdge reports 100%, the app sends a separate one-time `Battery is full.` alert, even if a full-soon alert was already sent.
-After a full or full-soon alert, the app keeps that alert active until the battery drops below `BATTERY_FULL_ALERT_RESET_BELOW_PERCENT`, so small top-ups near 100% do not send repeat alerts.
+After a full or full-soon alert, the app keeps that alert active until the battery drops below `BATTERY_FULL_ALERT_RESET_BELOW_PERCENT`, so small top-ups near 100% do not send repeat alerts. If the worker starts while the battery is already at or above that reset threshold, the full-soon alert is treated as already active; the separate full alert can still be sent at 100%.
 
 ## SMS alerts
 
