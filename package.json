@@ -12,12 +12,12 @@
     "test:alerts": "tsx src/testAlerts.ts"
   },
   "dependencies": {
-    "twilio": "^5.3.7"
+    "@types/node": "^20.12.12",
+    "twilio": "^5.3.7",
+    "typescript": "^5.6.3"
   },
   "devDependencies": {
-    "@types/node": "^20.12.12",
-    "tsx": "^4.19.2",
-    "typescript": "^5.6.3"
+    "tsx": "^4.19.2"
   },
   "engines": {
     "node": ">=20"
