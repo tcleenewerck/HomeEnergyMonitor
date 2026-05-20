@@ -11,6 +11,20 @@ const alertSender = createAlertSender(config);
 const alertProcessor = new AlertProcessor(config, alertSender);
 const heartbeat = config.heartbeat ? new DailyHeartbeat(config.heartbeat, config.requestTimeoutMs) : undefined;
 let consecutiveMonitorFailures = 0;
+let lastMonitorCycleCompletedAt = Date.now();
+
+function exitAfterUnexpectedError(source: string, error: unknown): never {
+  console.error(`${source}: ${error instanceof Error ? error.stack ?? error.message : error}`);
+  process.exit(1);
+}
+
+process.on("uncaughtException", (error) => {
+  exitAfterUnexpectedError("Uncaught exception", error);
+});
+
+process.on("unhandledRejection", (reason) => {
+  exitAfterUnexpectedError("Unhandled rejection", reason);
+});
 
 async function monitorOnce(): Promise<void> {
   const flow = await fetchCurrentPowerFlow({
@@ -43,6 +57,12 @@ async function handleMonitorError(error: unknown): Promise<void> {
 
   console.error(`Monitor poll failed (${consecutiveMonitorFailures} consecutive): ${message}`);
 
+  heartbeat?.sendFailureIfDue(message).catch((heartbeatError: unknown) => {
+    console.error(
+      `Could not send failure heartbeat: ${heartbeatError instanceof Error ? heartbeatError.message : heartbeatError}`
+    );
+  });
+
   if (consecutiveMonitorFailures < config.maxConsecutiveMonitorFailures) {
     return;
   }
@@ -64,14 +84,30 @@ async function runMonitorCycle(): Promise<void> {
     await monitorOnce();
   } catch (error: unknown) {
     await handleMonitorError(error);
+  } finally {
+    lastMonitorCycleCompletedAt = Date.now();
   }
+}
+
+function checkMonitorWatchdog(): void {
+  const staleForMs = Date.now() - lastMonitorCycleCompletedAt;
+
+  if (staleForMs <= config.monitorStaleRestartMs) {
+    return;
+  }
+
+  console.error(
+    `No monitor cycle completed for ${config.monitorStaleRestartAttempts} poll attempts ` +
+      `(${Math.round(staleForMs / 1000)} seconds). Exiting so Railway can restart the worker.`
+  );
+  process.exit(1);
 }
 
 async function startMonitor(): Promise<void> {
   const overview = settingsOverview(config);
   console.log(overview);
 
-  if (heartbeat) {
+  if (heartbeat && config.heartbeat?.startupOverviewEnabled) {
     heartbeat.sendDeploymentOverview(overview).catch((error: unknown) => {
       console.error(
         `Could not send deployment settings overview to heartbeat channel: ${
@@ -87,6 +123,7 @@ async function startMonitor(): Promise<void> {
       console.error(`Could not send monitor failure alert: ${error instanceof Error ? error.message : error}`);
     });
   }, config.pollIntervalMs);
+  setInterval(checkMonitorWatchdog, Math.min(config.monitorStaleRestartMs, 60_000));
 }
 
 startMonitor().catch((error: unknown) => {

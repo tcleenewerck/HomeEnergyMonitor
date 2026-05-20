@@ -7,6 +7,8 @@ type LocalDateHour = {
   hour: number;
 };
 
+type SlackSender = (webhookUrl: string, message: string, timeoutMs: number) => Promise<void>;
+
 function localDateHour(now: Date, timezone: string): LocalDateHour {
   const parts = new Intl.DateTimeFormat("en-CA", {
     timeZone: timezone,
@@ -41,7 +43,16 @@ function powerText(label: string, value?: number): string {
   return `${label}: ${value} kW`;
 }
 
-function heartbeatMessage(flow: CurrentPowerFlow, timezone: string): string {
+function heartbeatMessage(flow: CurrentPowerFlow | undefined, timezone: string, errorMessage?: string): string {
+  if (!flow) {
+    return [
+      ":warning: *Home Energy Monitor heartbeat*",
+      `Time: ${new Date().toLocaleString("en-GB", { timeZone: timezone })}`,
+      "Status: monitor is running, but the latest SolarEdge poll failed",
+      `Latest error: ${errorMessage ?? "n/a"}`
+    ].join("\n");
+  }
+
   const storage = flow.STORAGE ?? flow.Storage;
   const chargeLevel = storage?.chargeLevel === undefined ? "n/a" : `${storage.chargeLevel}%`;
 
@@ -60,11 +71,12 @@ export class DailyHeartbeat {
 
   constructor(
     private readonly config: NonNullable<MonitorConfig["heartbeat"]>,
-    private readonly timeoutMs: number
+    private readonly timeoutMs: number,
+    private readonly slackSender: SlackSender = sendSlackMessage
   ) {}
 
   async sendDeploymentOverview(settingsOverview: string): Promise<void> {
-    await sendSlackMessage(
+    await this.slackSender(
       this.config.slackWebhookUrl,
       [
         ":rocket: *Home Energy Monitor deployed*",
@@ -78,13 +90,25 @@ export class DailyHeartbeat {
   }
 
   async sendIfDue(flow: CurrentPowerFlow, now = new Date()): Promise<void> {
+    await this.sendDueHeartbeat(now, flow);
+  }
+
+  async sendFailureIfDue(errorMessage: string, now = new Date()): Promise<void> {
+    await this.sendDueHeartbeat(now, undefined, errorMessage);
+  }
+
+  private async sendDueHeartbeat(now: Date, flow?: CurrentPowerFlow, errorMessage?: string): Promise<void> {
     const local = localDateHour(now, this.config.timezone);
 
     if (local.hour < this.config.hour || this.lastSentDateKey === local.dateKey) {
       return;
     }
 
-    await sendSlackMessage(this.config.slackWebhookUrl, heartbeatMessage(flow, this.config.timezone), this.timeoutMs);
+    await this.slackSender(
+      this.config.slackWebhookUrl,
+      heartbeatMessage(flow, this.config.timezone, errorMessage),
+      this.timeoutMs
+    );
     this.lastSentDateKey = local.dateKey;
     console.log(`Heartbeat sent for ${local.dateKey}.`);
   }

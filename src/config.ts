@@ -4,6 +4,8 @@ export type MonitorConfig = {
   solarEdgeSiteId: string;
   solarEdgeApiKey: string;
   pollIntervalMs: number;
+  monitorStaleRestartAttempts: number;
+  monitorStaleRestartMs: number;
   alertCooldownMs: number;
   requestTimeoutMs: number;
   maxConsecutiveMonitorFailures: number;
@@ -34,6 +36,7 @@ export type MonitorConfig = {
     hour: number;
     timezone: string;
     slackWebhookUrl: string;
+    startupOverviewEnabled: boolean;
   };
 };
 
@@ -141,6 +144,7 @@ function loadHeartbeatConfig(): MonitorConfig["heartbeat"] {
   const hour = numberEnv("HEARTBEAT_HOUR", 8);
   const timezone = optionalEnv("HEARTBEAT_TIMEZONE") ?? "Europe/Brussels";
   const slackWebhookUrl = optionalEnv("HEARTBEAT_SLACK_WEBHOOK_URL") ?? optionalEnv("SLACK_WEBHOOK_URL");
+  const startupOverviewEnabled = booleanEnv("HEARTBEAT_STARTUP_OVERVIEW_ENABLED", false);
 
   if (!Number.isInteger(hour) || hour < 0 || hour > 23) {
     throw new Error("HEARTBEAT_HOUR must be an integer from 0 to 23.");
@@ -153,12 +157,14 @@ function loadHeartbeatConfig(): MonitorConfig["heartbeat"] {
   return {
     hour,
     timezone,
-    slackWebhookUrl
+    slackWebhookUrl,
+    startupOverviewEnabled
   };
 }
 
 export function loadConfig(): MonitorConfig {
   const pollIntervalSeconds = numberEnv("POLL_INTERVAL_SECONDS", 60);
+  const monitorStaleRestartAttempts = numberEnv("MONITOR_STALE_RESTART_ATTEMPTS", 5);
   const alertCooldownSeconds = numberEnv("ALERT_COOLDOWN_SECONDS", 900);
   const requestTimeoutSeconds = numberEnv("REQUEST_TIMEOUT_SECONDS", 15);
   const maxConsecutiveMonitorFailures = numberEnv("MAX_CONSECUTIVE_MONITOR_FAILURES", 3);
@@ -168,6 +174,10 @@ export function loadConfig(): MonitorConfig {
 
   if (pollIntervalSeconds < 10) {
     throw new Error("POLL_INTERVAL_SECONDS must be at least 10.");
+  }
+
+  if (!Number.isInteger(monitorStaleRestartAttempts) || monitorStaleRestartAttempts < 2) {
+    throw new Error("MONITOR_STALE_RESTART_ATTEMPTS must be an integer of at least 2.");
   }
 
   if (requestTimeoutSeconds < 1) {
@@ -182,6 +192,8 @@ export function loadConfig(): MonitorConfig {
     solarEdgeSiteId: requiredEnv("SOLAREDGE_SITE_ID"),
     solarEdgeApiKey: requiredEnv("SOLAREDGE_API_KEY"),
     pollIntervalMs: pollIntervalSeconds * 1000,
+    monitorStaleRestartAttempts,
+    monitorStaleRestartMs: monitorStaleRestartAttempts * pollIntervalSeconds * 1000,
     alertCooldownMs: alertCooldownSeconds * 1000,
     requestTimeoutMs: requestTimeoutSeconds * 1000,
     maxConsecutiveMonitorFailures,

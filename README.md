@@ -37,6 +37,7 @@ Before relying on a deployment, verify:
 
 - External calls have a finite timeout through `REQUEST_TIMEOUT_SECONDS`.
 - Repeated SolarEdge polling failures trigger an alert through `MAX_CONSECUTIVE_MONITOR_FAILURES`.
+- Stale polling restarts the Railway worker through `MONITOR_STALE_RESTART_ATTEMPTS`.
 - The local `.env` file is not world-readable. On macOS/Linux, run `chmod 600 .env`.
 
 ## Monitoring reliability
@@ -44,6 +45,8 @@ Before relying on a deployment, verify:
 External HTTP requests time out after `REQUEST_TIMEOUT_SECONDS`, which defaults to `15`.
 
 If SolarEdge polling fails repeatedly, the worker keeps running and sends an alert after `MAX_CONSECUTIVE_MONITOR_FAILURES` consecutive failures. This defaults to `3` and clears once a later SolarEdge poll succeeds.
+
+If no monitor cycle completes for `MONITOR_STALE_RESTART_ATTEMPTS` expected poll attempts, the worker exits with code `1` so Railway can restart it through the `ON_FAILURE` restart policy. This defaults to `5`.
 
 Battery and SolarEdge alerts are only sent inside their configured alert timeslots. The worker still monitors and logs outside those windows. The default battery alert timeslot is `07:00-18:00` in `Europe/Brussels`, so evening battery alerts are suppressed unless you change the window. SolarEdge alerts run all day when `SOLAREDGE_ALERT_TIMESLOTS` is unset or blank.
 
@@ -119,7 +122,10 @@ Send one Slack heartbeat message per day when the configured hour is reached:
 - `HEARTBEAT_HOUR=8`
 - `HEARTBEAT_TIMEZONE=Europe/Brussels`
 - `HEARTBEAT_SLACK_WEBHOOK_URL`
+- `HEARTBEAT_STARTUP_OVERVIEW_ENABLED=false`
 
 `HEARTBEAT_HOUR` is an hour from `0` to `23` in `HEARTBEAT_TIMEZONE`.
 
 To choose the Slack channel, create the incoming webhook for that channel and put it in `HEARTBEAT_SLACK_WEBHOOK_URL`. If `HEARTBEAT_SLACK_WEBHOOK_URL` is empty, the app falls back to `SLACK_WEBHOOK_URL`.
+
+The daily heartbeat is separate from startup overview messages. `HEARTBEAT_STARTUP_OVERVIEW_ENABLED` defaults to `false` so Railway restarts do not send a settings overview to Slack. Set it to `true` only when you want a Slack message on every worker start.

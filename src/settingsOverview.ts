@@ -32,6 +32,7 @@ function formatList(lines: string[]): string {
 
 export function settingsOverview(config: MonitorConfig): string {
   const pollIntervalSeconds = config.pollIntervalMs / 1000;
+  const monitorStaleRestartSeconds = config.monitorStaleRestartMs / 1000;
   const alertCooldownSeconds = config.alertCooldownMs / 1000;
   const heartbeat = config.heartbeat;
 
@@ -47,6 +48,9 @@ export function settingsOverview(config: MonitorConfig): string {
     "Monitoring",
     formatList([
       `Polling interval: every ${durationFromSeconds(pollIntervalSeconds)}`,
+      `Stale monitor restart: after ${config.monitorStaleRestartAttempts} missed poll attempts (${durationFromSeconds(
+        monitorStaleRestartSeconds
+      )})`,
       `Alert cooldown: ${durationFromSeconds(alertCooldownSeconds)}`,
       `Request timeout: ${durationFromSeconds(config.requestTimeoutMs / 1000)}`,
       `Monitor failure alert: after ${config.maxConsecutiveMonitorFailures} consecutive failures`,
@@ -79,7 +83,8 @@ export function settingsOverview(config: MonitorConfig): string {
       `Status: ${enabledText(heartbeat !== undefined)}`,
       `Time: ${heartbeat ? `${String(heartbeat.hour).padStart(2, "0")}:00` : "not configured"}`,
       `Timezone: ${heartbeat?.timezone ?? "not configured"}`,
-      `Slack webhook: ${heartbeat ? "configured" : "not configured"}`
+      `Slack webhook: ${heartbeat ? "configured" : "not configured"}`,
+      `Startup overview: ${enabledText(heartbeat?.startupOverviewEnabled ?? false)}`
     ])
   ].join("\n");
 }

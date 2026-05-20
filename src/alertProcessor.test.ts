@@ -9,6 +9,8 @@ const config: MonitorConfig = {
   solarEdgeSiteId: "test-site",
   solarEdgeApiKey: "test-key",
   pollIntervalMs: 60_000,
+  monitorStaleRestartAttempts: 5,
+  monitorStaleRestartMs: 300_000,
   alertCooldownMs: 900_000,
   requestTimeoutMs: 15_000,
   maxConsecutiveMonitorFailures: 3,
