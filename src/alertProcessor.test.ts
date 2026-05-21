@@ -50,9 +50,23 @@ describe("AlertProcessor", () => {
     await processor.process([alert], now);
     await processor.process([alert], new Date("2026-05-19T10:30:00+02:00"));
     await processor.process([], new Date("2026-05-19T10:31:00+02:00"));
-    await processor.process([alert], new Date("2026-05-19T10:32:00+02:00"));
+    await processor.process([alert], new Date("2026-05-19T10:46:00+02:00"));
+    await processor.process([alert], new Date("2026-05-19T10:47:00+02:00"));
 
     assert.deepEqual(sender.sent.map((sent) => sent.message), ["Battery alert", "Battery alert"]);
+  });
+
+  it("only sends alerts after a second consecutive eligible process confirms them", async () => {
+    const sender = new RecordingSender();
+    const processor = new AlertProcessor(config, sender);
+    const alert = batteryAlert();
+
+    await processor.process([alert], new Date("2026-05-19T10:00:00+02:00"));
+    await processor.process([], new Date("2026-05-19T10:01:00+02:00"));
+    await processor.process([alert], new Date("2026-05-19T10:02:00+02:00"));
+    await processor.process([alert], new Date("2026-05-19T10:03:00+02:00"));
+
+    assert.deepEqual(sender.sent.map((sent) => sent.message), ["Battery alert"]);
   });
 
   it("uses active-only priming to suppress a later send-once alert with the same key", async () => {
@@ -90,6 +104,10 @@ describe("AlertProcessor", () => {
       [batteryAlert({ resetOnceStateBeforeSending: true, sendOnceUntilCleared: true })],
       new Date("2026-05-19T10:00:00+02:00")
     );
+    await processor.process(
+      [batteryAlert({ resetOnceStateBeforeSending: true, sendOnceUntilCleared: true })],
+      new Date("2026-05-19T10:01:00+02:00")
+    );
 
     assert.equal(sender.sent.length, 1);
     assert.equal(state.activeOnceAlertKeys.has("battery-alert"), true);
@@ -101,8 +119,9 @@ describe("AlertProcessor", () => {
     const alert = batteryAlert();
 
     await processor.process([alert], new Date("2026-05-19T10:00:00+02:00"));
+    await processor.process([alert], new Date("2026-05-19T10:01:00+02:00"));
     await processor.process([alert], new Date("2026-05-19T10:05:00+02:00"));
-    await processor.process([alert], new Date("2026-05-19T10:16:00+02:00"));
+    await processor.process([alert], new Date("2026-05-19T10:17:00+02:00"));
 
     assert.deepEqual(sender.sent.map((sent) => sent.message), ["Battery alert", "Battery alert"]);
   });
@@ -115,6 +134,10 @@ describe("AlertProcessor", () => {
     await processor.process(
       [{ key: "grid-alert", device: "solaredge", message: "Grid alert" }],
       new Date("2026-05-19T19:00:00+02:00")
+    );
+    await processor.process(
+      [{ key: "grid-alert", device: "solaredge", message: "Grid alert" }],
+      new Date("2026-05-19T19:01:00+02:00")
     );
 
     assert.deepEqual(sender.sent.map((sent) => sent.message), ["Grid alert"]);
@@ -129,6 +152,11 @@ describe("AlertProcessor", () => {
     await processor.process(
       [{ key: "monitor-poll-failure", device: "solaredge", message: "Monitor failed", sendOnceUntilCleared: true }],
       new Date("2026-05-19T19:00:00+02:00"),
+      { clearMissingAlerts: false }
+    );
+    await processor.process(
+      [{ key: "monitor-poll-failure", device: "solaredge", message: "Monitor failed", sendOnceUntilCleared: true }],
+      new Date("2026-05-19T19:01:00+02:00"),
       { clearMissingAlerts: false }
     );
 

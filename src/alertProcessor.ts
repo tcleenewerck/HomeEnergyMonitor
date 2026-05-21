@@ -6,12 +6,14 @@ import { isWithinTimeSlotSchedule } from "./timeslots.js";
 export type AlertProcessorState = {
   lastAlertAt: Map<string, number>;
   activeOnceAlertKeys: Set<string>;
+  pendingConfirmationAlertKeys: Set<string>;
 };
 
 export function createAlertProcessorState(): AlertProcessorState {
   return {
     lastAlertAt: new Map<string, number>(),
-    activeOnceAlertKeys: new Set<string>()
+    activeOnceAlertKeys: new Set<string>(),
+    pendingConfirmationAlertKeys: new Set<string>()
   };
 }
 
@@ -33,6 +35,12 @@ export class AlertProcessor {
       for (const key of this.state.activeOnceAlertKeys) {
         if (!currentAlertKeys.has(key)) {
           this.state.activeOnceAlertKeys.delete(key);
+        }
+      }
+
+      for (const key of this.state.pendingConfirmationAlertKeys) {
+        if (!currentAlertKeys.has(key)) {
+          this.state.pendingConfirmationAlertKeys.delete(key);
         }
       }
     }
@@ -65,6 +73,11 @@ export class AlertProcessor {
     const nowMs = now.getTime();
 
     if (lastSentAt && nowMs - lastSentAt < this.config.alertCooldownMs) {
+      return false;
+    }
+
+    if (!this.state.pendingConfirmationAlertKeys.has(alert.key)) {
+      this.state.pendingConfirmationAlertKeys.add(alert.key);
       return false;
     }
 
