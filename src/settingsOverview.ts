@@ -9,8 +9,8 @@ function optionalWatts(value: number | undefined): string {
   return value === undefined ? "not configured" : `${value} W`;
 }
 
-function optionalPercent(value: number | undefined): string {
-  return value === undefined ? "not configured" : `${value}%`;
+function optionalPercents(value: number[] | undefined): string {
+  return value === undefined || value.length === 0 ? "not configured" : value.map((percent) => `${percent}%`).join(", ");
 }
 
 function optionalKWh(value: number | undefined): string {
@@ -68,7 +68,7 @@ export function settingsOverview(config: MonitorConfig): string {
       `Battery full notice: ${durationFromSeconds((config.thresholds.batteryFullNoticeMinutes ?? 5) * 60)} before full`,
       `Battery full alert reset: below ${config.thresholds.batteryFullAlertResetBelowPercent ?? 95}%`,
       `Minimum battery charge rate: ${optionalWatts(config.thresholds.minBatteryChargeRateW)}`,
-      `Minimum battery level: ${optionalPercent(config.thresholds.minBatteryLevelPercent)}`
+      `Minimum battery levels: ${optionalPercents(config.thresholds.minBatteryLevelPercents)}`
     ]),
     "",
     "Notifications",

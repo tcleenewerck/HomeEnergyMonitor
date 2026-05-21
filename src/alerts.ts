@@ -109,17 +109,17 @@ export function evaluateAlerts(flow: CurrentPowerFlow, config: MonitorConfig): A
     });
   }
 
-  if (
-    config.thresholds.minBatteryLevelPercent !== undefined &&
-    chargeLevel !== undefined &&
-    chargeLevel < config.thresholds.minBatteryLevelPercent
-  ) {
-    alerts.push({
-      key: "min-battery-level",
-      device: "battery",
-      message: `Battery level is ${Math.round(chargeLevel)}%, below ${config.thresholds.minBatteryLevelPercent}%.`,
-      sendOnceUntilCleared: true
-    });
+  if (config.thresholds.minBatteryLevelPercents !== undefined && chargeLevel !== undefined) {
+    for (const minBatteryLevelPercent of config.thresholds.minBatteryLevelPercents) {
+      if (chargeLevel < minBatteryLevelPercent) {
+        alerts.push({
+          key: `min-battery-level-${minBatteryLevelPercent}`,
+          device: "battery",
+          message: `Battery level is ${Math.round(chargeLevel)}%, below ${minBatteryLevelPercent}%.`,
+          sendOnceUntilCleared: true
+        });
+      }
+    }
   }
 
   if (config.thresholds.batteryCapacityKWh !== undefined) {

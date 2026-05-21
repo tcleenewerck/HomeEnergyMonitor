@@ -25,7 +25,7 @@ const baseConfig: MonitorConfig = {
     batteryFullNoticeMinutes: 5,
     batteryFullAlertResetBelowPercent: 95,
     minBatteryChargeRateW: 250,
-    minBatteryLevelPercent: 50
+    minBatteryLevelPercents: [50]
   }
 };
 
@@ -92,7 +92,32 @@ describe("minimum battery level alerts", () => {
   it("sends once when battery level is below the configured threshold", () => {
     assert.deepEqual(evaluateAlerts(flow({ chargeLevel: 49, storagePower: 0 }), baseConfig), [
       {
-        key: "min-battery-level",
+        key: "min-battery-level-50",
+        device: "battery",
+        message: "Battery level is 49%, below 50%.",
+        sendOnceUntilCleared: true
+      }
+    ]);
+  });
+
+  it("sends a separate once-only alert for each configured battery level", () => {
+    const config: MonitorConfig = {
+      ...baseConfig,
+      thresholds: {
+        ...baseConfig.thresholds,
+        minBatteryLevelPercents: [70, 50, 30]
+      }
+    };
+
+    assert.deepEqual(evaluateAlerts(flow({ chargeLevel: 49, storagePower: 0 }), config), [
+      {
+        key: "min-battery-level-70",
+        device: "battery",
+        message: "Battery level is 49%, below 70%.",
+        sendOnceUntilCleared: true
+      },
+      {
+        key: "min-battery-level-50",
         device: "battery",
         message: "Battery level is 49%, below 50%.",
         sendOnceUntilCleared: true

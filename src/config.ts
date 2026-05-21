@@ -21,7 +21,7 @@ export type MonitorConfig = {
     batteryFullNoticeMinutes?: number;
     batteryFullAlertResetBelowPercent?: number;
     minBatteryChargeRateW?: number;
-    minBatteryLevelPercent?: number;
+    minBatteryLevelPercents?: number[];
   };
   twilio?: {
     accountSid: string;
@@ -64,6 +64,40 @@ function optionalNumberEnv(name: string): number | undefined {
   }
 
   return parsed;
+}
+
+function optionalPercentListEnv(name: string): number[] | undefined {
+  const value = optionalEnv(name);
+
+  if (!value) {
+    return undefined;
+  }
+
+  const percents = value.split(",").map((part) => {
+    const normalized = part.trim().replace(/\s*%$/, "").trim();
+
+    if (normalized.length === 0) {
+      throw new Error(`Environment variable ${name} must be a comma-separated list of percentages.`);
+    }
+
+    const parsed = Number(normalized);
+
+    if (!Number.isFinite(parsed)) {
+      throw new Error(`Environment variable ${name} must be a comma-separated list of percentages.`);
+    }
+
+    if (parsed < 0 || parsed > 100) {
+      throw new Error(`Environment variable ${name} percentages must be from 0 to 100.`);
+    }
+
+    return parsed;
+  });
+
+  if (percents.length === 0) {
+    return undefined;
+  }
+
+  return [...new Set(percents)].sort((first, second) => second - first);
 }
 
 function numberEnv(name: string, fallback: number): number {
@@ -211,7 +245,7 @@ export function loadConfig(): MonitorConfig {
       batteryFullNoticeMinutes: optionalNumberEnv("BATTERY_FULL_NOTICE_MINUTES") ?? 5,
       batteryFullAlertResetBelowPercent: optionalNumberEnv("BATTERY_FULL_ALERT_RESET_BELOW_PERCENT") ?? 95,
       minBatteryChargeRateW: optionalNumberEnv("MIN_BATTERY_CHARGE_RATE_W") ?? 250,
-      minBatteryLevelPercent: optionalNumberEnv("MIN_BATTERY_LEVEL_PERCENT")
+      minBatteryLevelPercents: optionalPercentListEnv("MIN_BATTERY_LEVEL_PERCENT")
     },
     twilio: loadTwilioConfig(),
     slack: loadSlackConfig(),
