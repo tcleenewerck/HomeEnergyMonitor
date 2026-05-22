@@ -94,10 +94,27 @@ describe("minimum battery level alerts", () => {
       {
         key: "min-battery-level-50",
         device: "battery",
-        message: "Battery level is 49%, below 50%.",
+        message: "Battery 49%.",
         sendOnceUntilCleared: true
       }
     ]);
+  });
+
+  it("includes the battery direction when charging or discharging", () => {
+    assert.equal(
+      evaluateAlerts(
+        flow({ connections: [{ from: "PV", to: "Storage" }], chargeLevel: 49, storagePower: 1 }),
+        baseConfig
+      )[0]?.message,
+      "Battery 49%, charging."
+    );
+    assert.equal(
+      evaluateAlerts(
+        flow({ connections: [{ from: "Storage", to: "LOAD" }], chargeLevel: 49, storagePower: -1 }),
+        baseConfig
+      )[0]?.message,
+      "Battery 49%, discharging."
+    );
   });
 
   it("sends only the closest crossed battery level threshold", () => {
@@ -113,7 +130,7 @@ describe("minimum battery level alerts", () => {
       {
         key: "min-battery-level-50",
         device: "battery",
-        message: "Battery level is 49%, below 50%.",
+        message: "Battery 49%.",
         sendOnceUntilCleared: true
       },
       {
@@ -128,7 +145,7 @@ describe("minimum battery level alerts", () => {
       {
         key: "min-battery-level-30",
         device: "battery",
-        message: "Battery level is 10%, below 30%.",
+        message: "Battery 10%.",
         sendOnceUntilCleared: true
       },
       {

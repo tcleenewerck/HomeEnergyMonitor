@@ -76,6 +76,16 @@ function isBatteryCharging(flow: CurrentPowerFlow): boolean {
   return hasRoute(flow, "PV", "Storage") || hasRoute(flow, "GRID", "Storage") || hasRoute(flow, "LOAD", "Storage");
 }
 
+function isBatteryDischarging(flow: CurrentPowerFlow): boolean {
+  return hasRoute(flow, "Storage", "LOAD") || hasRoute(flow, "Storage", "GRID");
+}
+
+function lowBatteryMessage(flow: CurrentPowerFlow, chargeLevel: number): string {
+  const direction = isBatteryCharging(flow) ? ", charging" : isBatteryDischarging(flow) ? ", discharging" : "";
+
+  return `Battery ${Math.round(chargeLevel)}%${direction}.`;
+}
+
 export function evaluateAlerts(flow: CurrentPowerFlow, config: MonitorConfig): Alert[] {
   const alerts: Alert[] = [];
   const gridPowerW = gridPowerWatts(flow);
@@ -121,7 +131,7 @@ export function evaluateAlerts(flow: CurrentPowerFlow, config: MonitorConfig): A
         device: "battery",
         message:
           minBatteryLevelPercent === alertBatteryLevelThreshold
-            ? `Battery level is ${Math.round(chargeLevel)}%, below ${minBatteryLevelPercent}%.`
+            ? lowBatteryMessage(flow, chargeLevel)
             : "",
         ...(minBatteryLevelPercent === alertBatteryLevelThreshold
           ? { sendOnceUntilCleared: true }
