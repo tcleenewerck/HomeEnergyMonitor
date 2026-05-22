@@ -110,15 +110,23 @@ export function evaluateAlerts(flow: CurrentPowerFlow, config: MonitorConfig): A
   }
 
   if (config.thresholds.minBatteryLevelPercents !== undefined && chargeLevel !== undefined) {
-    for (const minBatteryLevelPercent of config.thresholds.minBatteryLevelPercents) {
-      if (chargeLevel < minBatteryLevelPercent) {
-        alerts.push({
-          key: `min-battery-level-${minBatteryLevelPercent}`,
-          device: "battery",
-          message: `Battery level is ${Math.round(chargeLevel)}%, below ${minBatteryLevelPercent}%.`,
-          sendOnceUntilCleared: true
-        });
-      }
+    const crossedBatteryLevelThresholds = config.thresholds.minBatteryLevelPercents
+      .filter((minBatteryLevelPercent) => chargeLevel < minBatteryLevelPercent)
+      .sort((left, right) => left - right);
+    const alertBatteryLevelThreshold = crossedBatteryLevelThresholds[0];
+
+    for (const minBatteryLevelPercent of crossedBatteryLevelThresholds) {
+      alerts.push({
+        key: `min-battery-level-${minBatteryLevelPercent}`,
+        device: "battery",
+        message:
+          minBatteryLevelPercent === alertBatteryLevelThreshold
+            ? `Battery level is ${Math.round(chargeLevel)}%, below ${minBatteryLevelPercent}%.`
+            : "",
+        ...(minBatteryLevelPercent === alertBatteryLevelThreshold
+          ? { sendOnceUntilCleared: true }
+          : { activeOnly: true, primeOnceState: true })
+      });
     }
   }
 

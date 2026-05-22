@@ -64,7 +64,7 @@ Set any of these environment variables to enable an alert:
 - `BATTERY_FULL_NOTICE_MINUTES`: alert when the battery is predicted to be full within this many minutes. Defaults to `5`.
 - `BATTERY_FULL_ALERT_RESET_BELOW_PERCENT`: after a full/full-soon alert, do not send another one until the battery drops below this charge level. Defaults to `95`.
 - `MIN_BATTERY_CHARGE_RATE_W`: ignore slow trickle charging below this rate. Defaults to `250`.
-- `MIN_BATTERY_LEVEL_PERCENT`: alert once when the battery drops below each configured charge level. Use one value like `50` or a comma-separated list like `30%,50%,70%`.
+- `MIN_BATTERY_LEVEL_PERCENT`: alert once when the battery drops below a configured charge level. Use one value like `50` or a comma-separated list like `30%,50%,70%`. When the current level is below multiple configured values, only the closest crossed threshold sends a warning.
 
 An alert must be detected in two consecutive monitor cycles before it is sent. This filters out one-off SolarEdge
 current-flow spikes without trying to interpret every possible transient power route.

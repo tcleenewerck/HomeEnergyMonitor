@@ -100,7 +100,7 @@ describe("minimum battery level alerts", () => {
     ]);
   });
 
-  it("sends a separate once-only alert for each configured battery level", () => {
+  it("sends only the closest crossed battery level threshold", () => {
     const config: MonitorConfig = {
       ...baseConfig,
       thresholds: {
@@ -111,16 +111,39 @@ describe("minimum battery level alerts", () => {
 
     assert.deepEqual(evaluateAlerts(flow({ chargeLevel: 49, storagePower: 0 }), config), [
       {
+        key: "min-battery-level-50",
+        device: "battery",
+        message: "Battery level is 49%, below 50%.",
+        sendOnceUntilCleared: true
+      },
+      {
         key: "min-battery-level-70",
         device: "battery",
-        message: "Battery level is 49%, below 70%.",
+        message: "",
+        activeOnly: true,
+        primeOnceState: true
+      }
+    ]);
+    assert.deepEqual(evaluateAlerts(flow({ chargeLevel: 10, storagePower: 0 }), config), [
+      {
+        key: "min-battery-level-30",
+        device: "battery",
+        message: "Battery level is 10%, below 30%.",
         sendOnceUntilCleared: true
       },
       {
         key: "min-battery-level-50",
         device: "battery",
-        message: "Battery level is 49%, below 50%.",
-        sendOnceUntilCleared: true
+        message: "",
+        activeOnly: true,
+        primeOnceState: true
+      },
+      {
+        key: "min-battery-level-70",
+        device: "battery",
+        message: "",
+        activeOnly: true,
+        primeOnceState: true
       }
     ]);
   });
