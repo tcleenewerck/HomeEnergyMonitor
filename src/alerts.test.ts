@@ -210,8 +210,28 @@ describe("battery full-soon alerts", () => {
 });
 
 describe("battery reset threshold and full alerts", () => {
-  it("primes full-soon as active above the reset threshold instead of sending it after a restart", () => {
-    const alerts = evaluateAlerts(flow({ connections: [{ from: "PV", to: "Storage" }], chargeLevel: 99, storagePower: 1.03 }), baseConfig);
+  it("sends full-soon above the reset threshold when the battery will be full within the notice window", () => {
+    const alerts = evaluateAlerts(
+      flow({ connections: [{ from: "PV", to: "Storage" }], chargeLevel: 95, storagePower: 6 }),
+      baseConfig
+    );
+
+    assert.deepEqual(alerts, [
+      {
+        key: "battery-full-soon",
+        device: "battery",
+        message: "Battery is expected to be full in about 5 min at 6000 W charging power.",
+        resetOnceStateBeforeSending: false,
+        sendOnceUntilCleared: true
+      }
+    ]);
+  });
+
+  it("primes full-soon as active above the reset threshold when no full-soon notice is due", () => {
+    const alerts = evaluateAlerts(
+      flow({ connections: [{ from: "PV", to: "Storage" }], chargeLevel: 99, storagePower: 1.03 }),
+      baseConfig
+    );
 
     assert.deepEqual(alerts, [
       {

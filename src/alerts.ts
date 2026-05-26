@@ -163,6 +163,16 @@ export function evaluateAlerts(flow: CurrentPowerFlow, config: MonitorConfig): A
         activeOnly: true,
         primeOnceState: true
       });
+    } else if (minutesToFull !== undefined && minutesToFull <= noticeMinutes && storagePowerW >= minChargeRateW) {
+      alerts.push({
+        key: "battery-full-soon",
+        device: "battery",
+        message:
+          `Battery is expected to be full in about ${Math.max(1, Math.round(minutesToFull))} min ` +
+          `at ${roundedWatts(storagePowerW)} W charging power.`,
+        resetOnceStateBeforeSending,
+        sendOnceUntilCleared: true
+      });
     } else if (chargeLevel !== undefined && chargeLevel >= resetBelowPercent) {
       alerts.push({
         key: "battery-full-soon",
@@ -176,16 +186,6 @@ export function evaluateAlerts(flow: CurrentPowerFlow, config: MonitorConfig): A
         device: "battery",
         message: "",
         activeOnly: true
-      });
-    } else if (minutesToFull !== undefined && minutesToFull <= noticeMinutes && storagePowerW >= minChargeRateW) {
-      alerts.push({
-        key: "battery-full-soon",
-        device: "battery",
-        message:
-          `Battery is expected to be full in about ${Math.max(1, Math.round(minutesToFull))} min ` +
-          `at ${roundedWatts(storagePowerW)} W charging power.`,
-        resetOnceStateBeforeSending,
-        sendOnceUntilCleared: true
       });
     }
   }
